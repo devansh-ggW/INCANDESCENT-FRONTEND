@@ -406,7 +406,7 @@
           const response = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, signal: state.controller.signal, body: JSON.stringify({ conversation_id: state.conversationId, message, history: historyPayload().slice(0, -1) }) });
           const data = await readResponse(response); if (!data || data.ok !== true || typeof data.message !== 'string') throw new Error('The backend returned an invalid response.');
           state.conversationId = data.conversation_id || state.conversationId; addMessage('assistant', data.message, { files: Array.isArray(data.files) ? data.files : [] });
-          if (data.status) addMessage('notice', data.status, { success: true });
+          if (data.status) addMessage('notice', data.status, { success: data.checks_ok === true });
           if (Array.isArray(data.test_results) && data.test_results.length) addMessage('notice', 'Verified results: ' + data.test_results.join(' · '), { success: true });
         } catch (error) { if (error.name === 'AbortError') addMessage('notice', 'Request cancelled. No completion was received.'); else addMessage('notice', 'Unable to reach the local backend: ' + error.message); }
         finally { state.sending = false; state.controller = null; sendButton.disabled = false; sendButton.textContent = 'Send'; stopButton.classList.remove('visible'); render(); checkStatus(); }
