@@ -359,7 +359,7 @@
       const isTextFile = (file) => file && (file.preview !== undefined || /^text\//.test(file.mime_type || '') || /\.(html?|css|js|json|md|py|txt|svg|xml|ya?ml)$/i.test(file.filename || ''));
       function setStatus(kind, text, model) { const dot = $('statusDot'); dot.className = 'status-dot ' + kind; $('statusText').textContent = text; if (model) $('modelText').textContent = model; }
       async function readResponse(response) { const type = response.headers.get('content-type') || ''; const body = type.includes('application/json') ? await response.json() : await response.text(); if (!response.ok) { const detail = typeof body === 'string' ? body : (body.error || body.message || 'Request failed'); throw new Error(detail || ('Request failed (' + response.status + ')')); } return body; }
-      async function checkStatus() { try { const data = await readResponse(await fetch('/api/status', { headers: { Accept: 'application/json' } })); if (data && data.ok) setStatus(data.ollama_connected ? 'online' : 'offline', data.ollama_connected ? 'Local engine connected' : 'Ollama disconnected', data.model || 'incandescent'); else setStatus('offline', 'Local engine unavailable', data && data.model); } catch (error) { setStatus('offline', 'Backend unavailable'); } }
+      async function checkStatus() { try { const data = await readResponse(await fetch('/api/status', { headers: { Accept: 'application/json' }, cache: 'no-store' })); if (data && data.ok) { if (data.ollama_connected) setStatus('online', 'Local engine connected', data.model || 'incandescent'); else if (data.ollama_server_reachable && !data.model_available) setStatus('offline', 'Model missing', data.model || 'incandescent'); else setStatus('offline', 'Ollama offline', data.model || 'incandescent'); } else setStatus('offline', 'Local engine unavailable', data && data.model); } catch (error) { setStatus('offline', 'Backend unavailable'); } }
       function render() {
         welcome.hidden = state.messages.length > 0;
         messagesEl.hidden = state.messages.length === 0;
@@ -400,6 +400,7 @@
       function historyPayload() { return state.messages.filter(item => item.role === 'user' || item.role === 'assistant').map(item => ({ role: item.role, content: item.content })); }
       async function sendMessage(text) {
         const message = String(text || '').trim(); if (!message || state.sending) return;
+        if (!state.conversationId) { const bytes = new Uint8Array(16); crypto.getRandomValues(bytes); state.conversationId = Array.from(bytes, value => value.toString(16).padStart(2, '0')).join(''); }
         addMessage('user', message); input.value = ''; state.sending = true; state.controller = new AbortController(); sendButton.disabled = true; sendButton.textContent = 'Working'; stopButton.classList.add('visible'); render();
         try {
           const response = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, signal: state.controller.signal, body: JSON.stringify({ conversation_id: state.conversationId, message, history: historyPayload().slice(0, -1) }) });
@@ -417,7 +418,7 @@
       input.addEventListener('keydown', event => { if (event.key === 'Enter' && !event.shiftKey && state.enterSends) { event.preventDefault(); form.requestSubmit(); } });
       document.querySelectorAll('.page-tab').forEach(tab => tab.addEventListener('click', () => showPage(tab.dataset.page)));
       $('newConversation').addEventListener('click', clearConversation);
-      $('stopButton').addEventListener('click', () => { if (state.controller) state.controller.abort(); });
+      $('stopButton').addEventListener('click', async () => { const controller = state.controller; if (!controller) return; if (state.conversationId) { try { await fetch('/api/cancel', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ conversation_id: state.conversationId }), keepalive: true }); } catch (_) {} } controller.abort(); });
       $('settingsButton').addEventListener('click', () => { const panel = $('settingsPanel'), open = panel.classList.toggle('open'); $('settingsButton').setAttribute('aria-expanded', String(open)); });
       function toggle(id, key) { const button = $(id); button.addEventListener('click', () => { state[key] = !state[key]; button.classList.toggle('active', state[key]); button.setAttribute('aria-pressed', String(state[key])); if (key === 'compact') document.body.classList.toggle('compact', state[key]); }); }
       toggle('compactToggle', 'compact'); toggle('enterToggle', 'enterSends');
