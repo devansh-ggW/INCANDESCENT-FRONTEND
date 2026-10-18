@@ -418,7 +418,7 @@
       input.addEventListener('keydown', event => { if (event.key === 'Enter' && !event.shiftKey && state.enterSends) { event.preventDefault(); form.requestSubmit(); } });
       document.querySelectorAll('.page-tab').forEach(tab => tab.addEventListener('click', () => showPage(tab.dataset.page)));
       $('newConversation').addEventListener('click', clearConversation);
-      $('stopButton').addEventListener('click', async () => { const controller = state.controller; if (!controller) return; if (state.conversationId) { try { await fetch('/api/cancel', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ conversation_id: state.conversationId }), keepalive: true }); } catch (_) {} } controller.abort(); });
+      $('stopButton').addEventListener('click', () => { const controller = state.controller; if (!controller) return; if (state.conversationId) { fetch('/api/cancel', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ conversation_id: state.conversationId }), keepalive: true }).catch(() => {}); } controller.abort(); });
       $('settingsButton').addEventListener('click', () => { const panel = $('settingsPanel'), open = panel.classList.toggle('open'); $('settingsButton').setAttribute('aria-expanded', String(open)); });
       function toggle(id, key) { const button = $(id); button.addEventListener('click', () => { state[key] = !state[key]; button.classList.toggle('active', state[key]); button.setAttribute('aria-pressed', String(state[key])); if (key === 'compact') document.body.classList.toggle('compact', state[key]); }); }
       toggle('compactToggle', 'compact'); toggle('enterToggle', 'enterSends');
