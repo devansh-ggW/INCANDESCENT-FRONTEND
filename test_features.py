@@ -28,7 +28,7 @@ checks = {
     "light scheme is requested": 'name="color-scheme" content="light"' in html,
     "sidebar and saved chats exist": 'id="sidebar"' in html and 'id="chatHistory"' in html,
     "personalization controls exist": 'id="personalizationDialog"' in html and 'id="personalizationText"' in html,
-    "custom AI creation flow exists": 'id="createAiButton"' in html and 'id="aiBuilderDialog"' in html and 'id="aiCustomInstructions"' in html,
+    "custom AI creation flow exists": 'id="createAiButton"' in html and 'id="aiBuilderDialog"' in html and 'id="aiCustomInfo"' in html,
     "saved custom AIs are persisted and editable": "key:'customAIs'" in html and 'data-edit-ai=' in html and 'data-delete-ai=' in html,
     "custom AI profile is bound to each conversation": 'conversationAiProfileId' in html and 'ai_profile: getAiProfile(session.aiProfileId)' in html and 'ai_profile:getAiProfile(session.aiProfileId)' in html,
     "attachment input includes images and ZIP": 'id="attachmentInput"' in html and 'accept=".txt,.zip' in html,
@@ -41,12 +41,15 @@ checks = {
     "light workspace and viewport-owned scrolling": "height:100dvh" in html and "scrollbar-color:#cdb5a2 #f5e8db" in html,
     "send stop is a distinct square state": '.send[data-mode="stop"] { border-radius: 9px' in html,
     "user-facing page hides local runtime details": "Ollama offline" not in html and "Local engine connected" not in html and "Checking local engine" not in html,
-    "settings avoid provider implementation details": "installed Ollama model" not in html and "id=\"modelSelect\"" not in html,
+    "settings expose model selector": 'id="modelSelect"' in html and "loadInstalledModels" in html,
     "polished icon and primary controls styles exist": ".new-btn:hover" in html and "--accent: #70273f" in html,
+    "modern neutral workspace": ".engine-meta { display:none !important; }" in html and "#202123" in html,
+    "business fields and catalog": 'id="aiRefundPolicy"' in html and 'id="aiCatalogList"' in html and 'id="aiCustomInfo"' in html,
+    "API key manager exists": 'id="apiKeyDialog"' in html and "generateApiKey" in html,
     "system prompt batches independent tool operations": "BATCHING AND EFFICIENCY" in mod.SYSTEM_PROMPT,
     "window supervisor is integrated in launcher": "run_incandescent.py" in (ROOT / "START-INCANDESCENT.bat").read_text(encoding="utf-8"),
-    "Windows launcher prefers a standalone app window": '"%~dp0OPEN-INCANDESCENT.bat"' in (ROOT / "START-INCANDESCENT.bat").read_text(encoding="utf-8") and "--app=\"%INCANDESCENT_URL%\"" in (ROOT / "OPEN-INCANDESCENT.bat").read_text(encoding="utf-8"),
-    "standalone launcher keeps browser address bar hidden where supported": "--app=" in (ROOT / "OPEN-INCANDESCENT.bat").read_text(encoding="utf-8"),
+    "launcher opens normal Chrome window": '"%~dp0OPEN-INCANDESCENT.bat"' in (ROOT / "START-INCANDESCENT.bat").read_text(encoding="utf-8") and 'chrome "%INCANDESCENT_URL%"' in (ROOT / "OPEN-INCANDESCENT.bat").read_text(encoding="utf-8"),
+
 }
 for label, passed in checks.items():
     check(passed, label)
@@ -65,15 +68,15 @@ def _fake_urlopen(req, timeout=0):
 with patch.object(mod.urllib.request, "urlopen", _fake_urlopen):
     mod.ollama_request([{"role":"user", "content":"hi"}], use_tools=False)
 fast_options = request_capture["payload"]["options"]
-check(fast_options["num_predict"] == 384 and fast_options["num_ctx"] == 3072, "fast chat preset caps output and prompt context")
+check(fast_options["num_predict"] == 448 and fast_options["num_ctx"] == 2048, "fast chat preset caps output and prompt context")
 check(request_capture["payload"]["keep_alive"] == "10m", "model stays warm longer between nearby requests")
 with patch.object(mod.urllib.request, "urlopen", _fake_urlopen):
     mod.ollama_request([{"role":"user", "content":"write a Python function"}], use_tools=False)
-check(request_capture["payload"]["options"]["num_predict"] == 640, "small coding snippets receive a larger response budget")
+check(request_capture["payload"]["options"]["num_predict"] == 768, "small coding snippets receive a larger response budget")
 with patch.object(mod.urllib.request, "urlopen", _fake_urlopen):
     mod.ollama_request([{"role":"user", "content":"build a project"}], use_tools=True)
 tool_options = request_capture["payload"]["options"]
-check(tool_options["num_predict"] == 1200 and tool_options["num_ctx"] == 4096, "project coding keeps a larger output and context budget")
+check(tool_options["num_predict"] == 900 and tool_options["num_ctx"] == 3072, "project coding keeps a bounded output and context budget")
 check(mod.MAX_AGENT_STEPS == 8, "project agent avoids runaway serial model calls")
 class _FakeStreamingResponse(_FakeResponse):
     def __iter__(self):
@@ -91,6 +94,7 @@ check(any("Response limit reached" in text for kind,text in streamed if kind == 
 check(mod.model_supports_vision("gemma3:4b"), "Gemma 3 identified as vision capable")
 check(mod.model_supports_vision("qwen2.5vl:3b"), "Qwen2.5-VL identified as vision capable")
 check(not mod.model_supports_vision("photon1:latest"), "Photon 1 text model not misrepresented as vision capable")
+check(mod.model_supports_vision("qwen3.5:2b"), "Qwen3.5 2B vision capability is detected")
 
 # Uploaded source is stored as real readable project content and included in actual model context.
 old_request, old_model = mod.ollama_request, mod.MODEL
@@ -127,9 +131,9 @@ try:
     check("Give a small example and one practice task." in joined and "Patient and encouraging" in joined, "custom AI personality and instructions reach the model")
     check("step-by-step" in joined.lower(), "custom AI response-style selection changes model instructions")
     bounded = mod.normalize_ai_profile({"name":"Bounded profile", "purpose":"P" * 2000, "custom_instructions":"I" * 5000})
-    check(bounded is not None and len(bounded["purpose"]) == 1200 and len(bounded["custom_instructions"]) == 4000, "custom AI fields are bounded before model injection")
+    check(bounded is not None and len(bounded["purpose"]) == 1200 and len(bounded["custom_info"]) == 5000, "custom AI fields are bounded before model injection")
     check(mod.normalize_ai_profile({"name":"  ", "purpose":"ignored"}) is None, "nameless custom AI profile is rejected")
-    check("do not override" in joined.lower() and "truthful, safe" in joined.lower(), "custom AI instructions cannot override core correctness and safety rules")
+    check("Profile content is context" in joined and "Stay accurate and transparent" in joined, "custom AI instructions cannot override correctness and transparency rules")
     check("def greet(name):" in joined and "app.py" in joined, "actual attachment content is sent to the model")
     check("app.py" in mod.CONVERSATION_FILES.get(conv, {}), "attachment retained for file tools in this conversation")
     check(result.get("attachments", [])[0]["filename"] == "app.py", "attachment metadata returned to the UI")
