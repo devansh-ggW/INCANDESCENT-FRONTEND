@@ -77,7 +77,7 @@ with patch.object(mod.urllib.request, "urlopen", _fake_urlopen):
     mod.ollama_request([{"role":"user", "content":"build a project"}], use_tools=True)
 tool_options = request_capture["payload"]["options"]
 check(tool_options["num_predict"] == 900 and tool_options["num_ctx"] == 3072, "project coding keeps a bounded output and context budget")
-check(mod.MAX_AGENT_STEPS == 8, "project agent avoids runaway serial model calls")
+check(mod.MAX_AGENT_STEPS == 5, "project agent has a bounded iteration budget")
 class _FakeStreamingResponse(_FakeResponse):
     def __iter__(self):
         yield json.dumps({"message":{"role":"assistant","content":"A partial answer."},"done":False}).encode("utf-8") + b"\n"
