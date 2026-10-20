@@ -71,7 +71,7 @@ MAX_CONVERSATION_ARTIFACT_BYTES = 16_000_000
 MAX_ARTIFACTS_PER_CONVERSATION = 90
 MAX_CONVERSATION_CHARS = 4_000
 MAX_HISTORY_MESSAGES = 8
-MAX_AGENT_STEPS = 8
+MAX_AGENT_STEPS = 5
 OLLAMA_TIMEOUT_SECONDS = 180
 
 LOCK = threading.RLock()
@@ -465,17 +465,18 @@ def ollama_request(messages: List[Dict[str, Any]], use_tools: bool = True, strea
             latest_user_text = content if isinstance(content, str) else str(content)
             break
     code_intent = bool(re.search(r"\b(?:code|coding|function|snippet|example|javascript|typescript|python|html|css|write|generate|implement|debug|fix|step by step|in detail)\b", latest_user_text, re.I))
-    chat_token_budget = 640 if code_intent else 384
+    chat_token_budget = 768 if code_intent else 448
     body: Dict[str, Any] = {
         "model": MODEL,
         "messages": messages,
+        "think": False,  # Avoid long hidden reasoning on the low-power local CPU.
         "stream": should_stream,
         "keep_alive": "10m",
         "options": {
             "temperature": 0.38 if not use_tools else 0.18,
             "top_p": 0.9 if not use_tools else 0.82,
-            "num_ctx": 3072 if not use_tools else 4096,
-            "num_predict": chat_token_budget if not use_tools else 1200,
+            "num_ctx": 2048 if not use_tools else 3072,
+            "num_predict": chat_token_budget if not use_tools else 900,
             "repeat_penalty": 1.08,
         },
     }
