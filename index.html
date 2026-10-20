@@ -888,14 +888,121 @@
       .active-ai-banner { align-items:flex-start; flex-wrap:wrap; }
       .active-ai-banner button { margin-left:34px; }
     }
-</style>
+
+    /* Simple, professional light UI inspired by clean modern productivity tools. */
+    :root { --bg:#fff; --panel:#fff; --panel-2:#f7f7f8; --panel-3:#f1f1f1; --line:#d9d9df; --line-soft:#ececf0; --text:#202123; --muted:#565960; --dim:#777a80; --purple:#202123; --purple-strong:#202123; --purple-soft:#f1f1f2; --shadow:0 12px 36px rgba(0,0,0,.12); color-scheme:light; }
+    html,body { background:#fff !important; color:#202123 !important; }
+    .topbar { height:58px; padding:0 22px; background:#fff !important; border-bottom:1px solid #e7e7e9 !important; }
+    .page-nav { background:#fff !important; padding:0 22px; border-bottom:1px solid #e7e7e9 !important; }
+    .page-tab { border-radius:8px !important; color:#565960 !important; }
+    .page-tab.active,.page-tab:hover { background:#f1f1f2 !important; color:#202123 !important; border-color:transparent !important; }
+    .page-tab.active { box-shadow:inset 0 -2px #202123; }
+    .mark { border-color:#202123 !important; color:#202123 !important; transform:none !important; border-radius:6px !important; }
+    .wordmark { color:#202123 !important; font-size:13px; letter-spacing:.12em !important; }
+    .tagline { color:#73757b !important; letter-spacing:.04em !important; text-transform:none !important; }
+    .engine-meta { display:none !important; }
+    .actions { min-width:auto; }
+    .icon-btn,.new-btn { border:1px solid transparent !important; color:#333 !important; border-radius:8px !important; }
+    .icon-btn:hover,.new-btn:hover { background:#f3f3f4 !important; border-color:#e2e2e5 !important; }
+    .settings { background:#fff !important; border-color:#e3e3e6 !important; border-radius:12px !important; box-shadow:0 10px 32px rgba(0,0,0,.12) !important; }
+    main { width:min(1050px,100%); padding:28px 24px 28px; }
+    .page-heading h2,.welcome h1 { color:#202123 !important; }
+    .welcome { max-width:780px; margin:9vh auto 0; }
+    .welcome .eyebrow,.eyebrow { color:#696b70 !important; letter-spacing:.09em !important; }
+    .welcome h1 { font-size:clamp(30px,4vw,42px) !important; font-weight:600 !important; letter-spacing:-.035em !important; }
+    .welcome p { color:#55585f !important; }
+    .starter-grid { grid-template-columns:repeat(2,minmax(0,1fr)); max-width:600px; margin:28px auto 0; gap:9px; }
+    .starter { min-height:70px; border:1px solid #e2e2e5 !important; border-radius:12px !important; background:#fff !important; color:#5e6168 !important; }
+    .starter:hover { border-color:#b9bbc0 !important; background:#f8f8f8 !important; transform:none !important; }
+    .starter b { color:#242529 !important; font-size:12px !important; font-weight:600; }
+    .starter span { color:#696c72 !important; }
+    .sidebar { background:#f7f7f8 !important; border-right:1px solid #e6e6e9 !important; color:#202123 !important; }
+    .sidebar-new,.sidebar-action,.sidebar-collapse { border-radius:9px !important; }
+    .create-ai-trigger { min-height:32px !important; height:32px !important; width:auto !important; min-width:0 !important; align-self:stretch; justify-content:flex-start !important; padding:0 10px !important; margin:4px 0 15px !important; background:#fff !important; color:#202123 !important; border:1px solid #d7d7dc !important; border-radius:8px !important; box-shadow:none !important; font-size:12px !important; font-weight:550 !important; }
+    .create-ai-trigger:hover { background:#f0f0f1 !important; color:#111 !important; border-color:#bfc0c4 !important; transform:none !important; }
+    .create-ai-trigger span { font-size:15px; line-height:1; }
+    .ai-profile-row { grid-template-columns:minmax(0,1fr) auto !important; border-radius:8px !important; background:transparent !important; border-color:transparent !important; }
+    .ai-profile-row.selected { background:#ededee !important; border-color:#e1e1e3 !important; }
+    .ai-profile-use strong { color:#292a2e !important; font-size:12px !important; }
+    .ai-profile-use span { color:#707278 !important; }
+    .ai-profile-actions button { border:1px solid transparent !important; border-radius:6px !important; background:transparent !important; color:#565960 !important; }
+    .ai-profile-actions button:hover { background:#e9e9eb !important; color:#202123 !important; border-color:#dbdbde !important; }
+    .conversation { min-height:350px; }
+    .messages { max-width:780px; margin:0 auto; width:100%; gap:25px; }
+    .message { max-width:100%; gap:12px; }
+    .avatar { border:0 !important; border-radius:50% !important; background:#f1f1f2 !important; color:#333 !important; }
+    .message-label { display:none !important; }
+    .message-content { color:#26272b !important; font-size:14px; line-height:1.72; }
+    .user .message-content { border:1px solid #ececef !important; background:#f4f4f5 !important; color:#242529 !important; border-radius:18px !important; padding:10px 14px !important; }
+    .notice { border-radius:8px; background:#fafafa !important; color:#444 !important; border-left-color:#8a8b8f; }
+    .notice.success { background:#f6f7f6 !important; color:#3f5944 !important; border-left-color:#8aa090; }
+    .progress { color:#666 !important; }
+    .spinner { border-color:#e5e5e7 !important; border-top-color:#333 !important; }
+    .composer-wrap { max-width:800px; width:100%; margin:0 auto; background:linear-gradient(transparent,#fff 18%) !important; }
+    .composer { border:1px solid #d9d9df !important; border-radius:18px !important; box-shadow:0 2px 8px rgba(0,0,0,.05) !important; background:#fff !important; }
+    .composer:focus-within { border-color:#bfc0c5 !important; box-shadow:0 0 0 2px rgba(0,0,0,.025) !important; }
+    textarea { color:#202123 !important; }
+    .composer-footer { border-top:0 !important; }
+    .hint { color:#777a80 !important; }
+    .send,.stop { min-width:36px !important; width:36px; height:36px; border-radius:50% !important; border:0 !important; background:#202123 !important; color:#fff !important; }
+    .send:hover { background:#000 !important; }
+    .utility-btn { border-color:#e1e1e4 !important; background:#fff !important; color:#4d4f55 !important; border-radius:8px !important; }
+    .utility-btn:hover { background:#f4f4f5 !important; }
+    .file-card,.activity-item,.preview-panel { background:#fff !important; border-color:#e3e3e6 !important; border-radius:10px !important; }
+    pre { color:#202123 !important; }
+    .personalization-dialog { border:1px solid #e0e0e4 !important; border-radius:16px !important; box-shadow:0 24px 70px rgba(0,0,0,.2) !important; }
+    .personalization-dialog::backdrop { background:rgba(20,20,20,.26) !important; backdrop-filter:blur(2px); }
+    .dialog-head h2 { color:#202123 !important; }
+    .dialog-description { color:#5d6066 !important; }
+    .field-label { color:#383a40 !important; }
+    .ai-input,.ai-textarea,.personalization-text { border:1px solid #dcdce1 !important; border-radius:8px !important; background:#fff !important; color:#202123 !important; box-shadow:none !important; }
+    .ai-input:focus,.ai-textarea:focus,.personalization-text:focus { border-color:#9b9da3 !important; outline:2px solid rgba(0,0,0,.04) !important; }
+    .dialog-primary { border:1px solid #202123 !important; background:#202123 !important; color:#fff !important; border-radius:8px !important; box-shadow:none !important; }
+    .dialog-primary:hover { background:#000 !important; }
+    .dialog-secondary { border:1px solid #d8d8de !important; background:#fff !important; color:#292a2f !important; border-radius:8px !important; }
+    .dialog-secondary:hover { background:#f4f4f5 !important; }
+    .ai-builder-form { max-width:790px; }
+    .ai-form-grid { gap:15px !important; }
+    .ai-form-section { padding:16px 0 2px; margin-top:2px; border-top:1px solid #ededf0; }
+    .ai-section-heading h3,.api-existing-heading h3 { margin:0 0 5px; color:#202123; font-size:14px; font-weight:650; }
+    .ai-section-heading p { margin:0 0 13px; color:#707279; font-size:12px; line-height:1.5; }
+    .ai-nested-grid { gap:12px !important; }
+    .ai-catalog-list { display:grid; gap:10px; }
+    .ai-catalog-row { display:flex; align-items:flex-start; gap:10px; padding:12px; border:1px solid #e3e3e7; border-radius:10px; background:#fff; }
+    .ai-catalog-fields { flex:1; min-width:0; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+    .ai-catalog-description { grid-column:1/-1; }
+    .catalog-add-button,.catalog-remove-button { min-height:32px; padding:0 10px; border:1px solid #d8d8de; border-radius:8px; background:#fff; color:#292a2f; cursor:pointer; font-size:12px; }
+    .catalog-add-button { margin-top:10px; }
+    .catalog-add-button:hover,.catalog-remove-button:hover { background:#f3f3f4; }
+    .catalog-remove-button { align-self:flex-start; }
+    .api-key-dialog { width:min(640px,calc(100vw - 28px)); }
+    .api-key-form { width:100%; }
+    .api-endpoint-panel { padding:13px; border:1px solid #e4e4e7; border-radius:10px; background:#fafafa; }
+    .api-endpoint-panel p,.api-key-reveal p { margin:8px 0 0; color:#656870; font-size:12px; line-height:1.5; }
+    .api-create-row,.api-secret-row,.api-key-row,.api-existing-heading { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .api-create-row { margin:14px 0; }
+    #apiKeyStatus { color:#656870; font-size:12px; line-height:1.4; }
+    .api-key-reveal { margin:14px 0; padding:12px; border:1px solid #d9d9df; border-radius:10px; background:#f7f7f8; }
+    .api-secret-row .ai-input { flex:1; min-width:0; }
+    .api-existing-heading { margin:18px 0 8px; }
+    .api-existing-heading span,.api-key-meta span { color:#74767d; font-size:11px; }
+    .api-key-list { display:grid; gap:8px; max-height:230px; overflow:auto; }
+    .api-key-row { padding:10px; border:1px solid #e5e5e8; border-radius:9px; }
+    .api-key-meta { min-width:0; display:grid; gap:4px; }
+    .api-key-meta strong { color:#27282c; font-size:12px; }
+    .api-key-meta code { color:#6a6c72; font-size:10px; overflow-wrap:anywhere; }
+    .api-empty { margin:0; padding:13px; color:#777a80; font-size:12px; }
+    @media (max-width:760px) { .engine-meta {display:none!important}.topbar{padding:12px 14px}.page-nav{padding:0 14px}main{padding:22px 13px 16px!important}.starter-grid{grid-template-columns:1fr}.starter:last-child{grid-column:auto}.ai-catalog-row{flex-direction:column}.ai-catalog-fields{grid-template-columns:1fr;width:100%}.catalog-remove-button{align-self:flex-end}.api-create-row{align-items:flex-start;flex-direction:column}.api-key-row{align-items:flex-start}.api-secret-row{align-items:stretch} }
+    @media (prefers-reduced-motion:reduce) { *,*::before,*::after {animation-duration:.01ms!important;transition-duration:.01ms!important} }
+
+  </style>
 </head>
 <body>
   <div class="app">
     <header class="topbar">
       <div class="brand" aria-label="INCANDESCENT home">
         <div class="mark" aria-hidden="true"><img src="/incandescent.ico?v=6" alt=""></div>
-        <div class="brand-copy"><div class="wordmark">INCANDESCENT AI</div><div class="tagline">Powered by Photon 1</div></div>
+        <div class="brand-copy"><div class="wordmark">INCANDESCENT</div><div class="tagline">Your local AI workspace</div></div>
       </div>
       <div class="engine-meta" aria-live="polite">
         <div class="status"><span id="statusDot" class="status-dot checking"></span><span id="statusText">Getting Incandescent ready…</span></div>
@@ -993,9 +1100,35 @@
         <div><label class="field-label" for="aiResponseStyle">Response style</label><select class="ai-input" id="aiResponseStyle" name="response_style"><option value="Adaptive">Adaptive to the task</option><option value="Concise">Concise and direct</option><option value="Balanced" selected>Balanced detail</option><option value="Detailed">Detailed explanations</option><option value="Step-by-step">Step by step</option></select></div>
         <div class="ai-field-full"><label class="field-label" for="aiPersonality">Personality and tone</label><textarea class="ai-textarea" id="aiPersonality" name="personality" maxlength="1200" rows="3" placeholder="e.g. Warm, confident, curious, clear, and never overly formal…"></textarea></div>
         <div class="ai-field-full"><label class="field-label" for="aiBackground">Knowledge and background</label><textarea class="ai-textarea" id="aiBackground" name="background" maxlength="3000" rows="4" placeholder="Useful facts about your work, audience, project, preferences, or domain. Avoid passwords and secrets."></textarea></div>
-        <div class="ai-field-full"><label class="field-label" for="aiCustomInstructions">Extra custom instructions</label><textarea class="ai-textarea" id="aiCustomInstructions" name="custom_instructions" maxlength="4000" rows="4" placeholder="Anything the fields above did not capture: rules, boundaries, formats, languages, examples…"></textarea></div>
+        
+        <div class="ai-form-section ai-field-full"><div class="ai-section-heading"><h3>Business details</h3><p>Facts customers may ask about. Leave anything unknown blank.</p></div><div class="ai-form-grid ai-nested-grid">
+          <div><label class="field-label" for="aiBusinessName">Business name</label><input class="ai-input" id="aiBusinessName" maxlength="120" placeholder="e.g. Dig It Up"></div>
+          <div><label class="field-label" for="aiBusinessCategory">Business category</label><input class="ai-input" id="aiBusinessCategory" maxlength="120" placeholder="e.g. Clothing and fashion"></div>
+          <div><label class="field-label" for="aiWebsite">Website</label><input class="ai-input" id="aiWebsite" type="url" maxlength="500" placeholder="https://example.com"></div>
+          <div><label class="field-label" for="aiContact">Customer contact</label><input class="ai-input" id="aiContact" maxlength="500" placeholder="Support email, phone, or channel"></div>
+          <div><label class="field-label" for="aiLocation">Location or service area</label><input class="ai-input" id="aiLocation" maxlength="500" placeholder="Address, city, or delivery area"></div>
+          <div><label class="field-label" for="aiHours">Opening hours</label><input class="ai-input" id="aiHours" maxlength="500" placeholder="Days and times, if applicable"></div></div></div>
+        <div class="ai-form-section ai-field-full"><div class="ai-section-heading"><h3>Policies and support</h3><p>Only saved policy details may be presented as official policy.</p></div><div class="ai-form-grid ai-nested-grid">
+          <div class="ai-field-full"><label class="field-label" for="aiRefundPolicy">Refunds, returns and cancellations</label><textarea class="ai-textarea" id="aiRefundPolicy" maxlength="2500" rows="3" placeholder="Enter the actual policy. Leave blank if not established."></textarea></div>
+          <div class="ai-field-full"><label class="field-label" for="aiShippingPolicy">Shipping and delivery</label><textarea class="ai-textarea" id="aiShippingPolicy" maxlength="2500" rows="3" placeholder="Confirmed delivery areas, costs, and timeframes."></textarea></div>
+          <div><label class="field-label" for="aiPaymentMethods">Accepted payment methods</label><textarea class="ai-textarea" id="aiPaymentMethods" maxlength="1000" rows="2" placeholder="Only confirmed methods"></textarea></div>
+          <div><label class="field-label" for="aiOtherPolicies">Other policies or FAQs</label><textarea class="ai-textarea" id="aiOtherPolicies" maxlength="2500" rows="2" placeholder="Warranty, exchanges, sizing, FAQs…"></textarea></div></div></div>
+        <div class="ai-form-section ai-field-full"><div class="ai-section-heading"><h3>Product catalog</h3><p>Add real products with a name, description, price and category. You can edit the catalog later.</p></div><div id="aiCatalogList" class="ai-catalog-list"></div><button class="catalog-add-button" id="addCatalogProduct" type="button">＋ Add product</button></div>
+        <div class="ai-field-full"><label class="field-label" for="aiCustomInfo">Custom info</label><textarea class="ai-textarea" id="aiCustomInfo" name="custom_info" maxlength="5000" rows="4" placeholder="Extra business facts, FAQs, languages, brand story and details not covered above. Do not add passwords or API secrets."></textarea></div>
       </div>
       <div class="ai-builder-footer"><span id="aiBuilderStatus" role="status"></span><button class="dialog-secondary" id="aiBuilderCancel" type="button">Cancel</button><button class="dialog-secondary" id="aiBuilderSave" type="button">Save AI</button><button class="dialog-primary" id="aiBuilderSaveTest" type="button">Save &amp; test</button></div>
+    </form>
+  </dialog>
+  <dialog id="apiKeyDialog" class="personalization-dialog api-key-dialog" aria-labelledby="apiKeyTitle">
+    <form method="dialog" class="api-key-form" id="apiKeyForm">
+      <div class="dialog-head"><div><div class="eyebrow">Developer access</div><h2 id="apiKeyTitle">API access</h2></div><button class="dialog-close" id="apiKeyClose" type="button" aria-label="Close API access">×</button></div>
+      <p class="dialog-description">Create a persistent key for this AI. Keys have no app-imposed request quota. Keep them private and use them from a backend, not public website JavaScript.</p>
+      <div class="api-endpoint-panel"><label class="field-label" for="apiEndpoint">Chat completions endpoint</label><input class="ai-input" id="apiEndpoint" readonly value="/v1/chat/completions"><p>Your PC must be running Incandescent and reachable from the calling application. This does not create public hosting by itself.</p></div>
+      <div class="api-create-row"><button class="dialog-primary" id="generateApiKey" type="button">Generate API key</button><span id="apiKeyStatus" role="status"></span></div>
+      <div class="api-key-reveal" id="apiKeyReveal" hidden><label class="field-label" for="apiKeyValue">New key — copy it now</label><div class="api-secret-row"><input class="ai-input" id="apiKeyValue" readonly autocomplete="off" spellcheck="false"><button class="dialog-secondary" id="copyApiKey" type="button">Copy</button></div><p>This secret is shown only once. Incandescent stores a SHA-256 hash, not the raw key.</p></div>
+      <div class="api-existing-heading"><h3>Active keys</h3><span>Revoke any key at any time.</span></div>
+      <div id="apiKeyList" class="api-key-list"><p class="api-empty">Loading keys…</p></div>
+      <div class="dialog-footer"><span id="apiKeyFooterNote" role="status"></span><button class="dialog-secondary" id="apiKeyDone" type="button">Done</button></div>
     </form>
   </dialog>
   <script>
@@ -1013,6 +1146,7 @@
     customAIs: [],
     conversationAiProfileId: null,
     editingAiProfileId: null,
+    apiProfileId: null,
     requests: new Map(),
     personalization: '',
     personalizationEnabled: true,
@@ -1805,9 +1939,10 @@
       const purpose = profile.purpose || 'Personal assistant';
       return '<div class="ai-profile-row ' + (selected ? 'selected' : '') + '">' +
         '<button class="ai-profile-use" type="button" data-use-ai="' + escapeHtml(profile.id) + '" title="Start a chat with ' + escapeHtml(profile.name) + '"><strong>' + escapeHtml(profile.name) + '</strong><span>' + escapeHtml(purpose) + '</span></button>' +
-        '<div class="ai-profile-actions"><button type="button" data-edit-ai="' + escapeHtml(profile.id) + '" title="Edit ' + escapeHtml(profile.name) + '" aria-label="Edit ' + escapeHtml(profile.name) + '">✎</button><button type="button" data-delete-ai="' + escapeHtml(profile.id) + '" title="Delete ' + escapeHtml(profile.name) + '" aria-label="Delete ' + escapeHtml(profile.name) + '">×</button></div></div>';
+        '<div class="ai-profile-actions"><button type="button" data-api-ai="' + escapeHtml(profile.id) + '" title="API access for ' + escapeHtml(profile.name) + '" aria-label="API access for ' + escapeHtml(profile.name) + '">API</button><button type="button" data-edit-ai="' + escapeHtml(profile.id) + '" title="Edit ' + escapeHtml(profile.name) + '" aria-label="Edit ' + escapeHtml(profile.name) + '">✎</button><button type="button" data-delete-ai="' + escapeHtml(profile.id) + '" title="Delete ' + escapeHtml(profile.name) + '" aria-label="Delete ' + escapeHtml(profile.name) + '">×</button></div></div>';
     }).join('');
     list.querySelectorAll('[data-use-ai]').forEach(button => button.addEventListener('click', () => startAiConversation(button.dataset.useAi)));
+    list.querySelectorAll('[data-api-ai]').forEach(button => button.addEventListener('click', () => openApiKeyManager(button.dataset.apiAi)));
     list.querySelectorAll('[data-edit-ai]').forEach(button => button.addEventListener('click', () => openAiBuilder(button.dataset.editAi)));
     list.querySelectorAll('[data-delete-ai]').forEach(button => button.addEventListener('click', () => deleteAiProfile(button.dataset.deleteAi)));
   }
@@ -1831,7 +1966,18 @@
     $('aiResponseStyle').value = profile ? profile.response_style || 'Balanced' : 'Balanced';
     $('aiPersonality').value = profile ? profile.personality || '' : '';
     $('aiBackground').value = profile ? profile.background || '' : '';
-    $('aiCustomInstructions').value = profile ? profile.custom_instructions || '' : '';
+    $('aiBusinessName').value = profile ? profile.business_name || '' : '';
+    $('aiBusinessCategory').value = profile ? profile.business_category || '' : '';
+    $('aiWebsite').value = profile ? profile.website || '' : '';
+    $('aiContact').value = profile ? profile.contact_info || '' : '';
+    $('aiLocation').value = profile ? profile.location || '' : '';
+    $('aiHours').value = profile ? profile.opening_hours || '' : '';
+    $('aiRefundPolicy').value = profile ? profile.refund_policy || '' : '';
+    $('aiShippingPolicy').value = profile ? profile.shipping_policy || '' : '';
+    $('aiPaymentMethods').value = profile ? profile.payment_methods || '' : '';
+    $('aiOtherPolicies').value = profile ? profile.other_policies || '' : '';
+    $('aiCustomInfo').value = profile ? profile.custom_info || profile.custom_instructions || '' : '';
+    renderCatalogProducts(profile && Array.isArray(profile.catalog) ? profile.catalog : []);
     $('aiBuilderSave').textContent = profile ? 'Save changes' : 'Save AI';
     $('aiBuilderDialog').showModal();
     window.setTimeout(() => $('aiName').focus(), 40);
@@ -1849,8 +1995,93 @@
       name: name.slice(0,72), purpose:purpose.slice(0,1200), audience:value('aiAudience').slice(0,600),
       response_style:value('aiResponseStyle').slice(0,40) || 'Balanced',
       personality:value('aiPersonality').slice(0,1200), background:value('aiBackground').slice(0,3000),
-      custom_instructions:value('aiCustomInstructions').slice(0,4000), updatedAt:Date.now(), createdAt:existing ? Number(existing.createdAt || Date.now()) : Date.now()
+      business_name:value('aiBusinessName').slice(0,120), business_category:value('aiBusinessCategory').slice(0,120), website:value('aiWebsite').slice(0,500),
+      contact_info:value('aiContact').slice(0,500), location:value('aiLocation').slice(0,500), opening_hours:value('aiHours').slice(0,500),
+      refund_policy:value('aiRefundPolicy').slice(0,2500), shipping_policy:value('aiShippingPolicy').slice(0,2500), payment_methods:value('aiPaymentMethods').slice(0,1000), other_policies:value('aiOtherPolicies').slice(0,2500),
+      catalog:readCatalogProducts(), custom_info:value('aiCustomInfo').slice(0,5000), updatedAt:Date.now(), createdAt:existing ? Number(existing.createdAt || Date.now()) : Date.now()
     };
+  }
+
+  function addCatalogProductRow(product = {}) {
+    const row = document.createElement('div');
+    row.className = 'ai-catalog-row';
+    row.setAttribute('data-catalog-row', '');
+    row.innerHTML = '<div class="ai-catalog-fields">' +
+      '<div><label class="field-label">Product name</label><input class="ai-input" data-product-field="name" maxlength="160" placeholder="e.g. Heavyweight Black Tee" value="' + escapeHtml(product.name || '') + '"></div>' +
+      '<div><label class="field-label">Price</label><input class="ai-input" data-product-field="price" maxlength="80" placeholder="e.g. ₹799" value="' + escapeHtml(product.price || '') + '"></div>' +
+      '<div><label class="field-label">Category</label><input class="ai-input" data-product-field="category" maxlength="120" placeholder="e.g. T-shirts" value="' + escapeHtml(product.category || '') + '"></div>' +
+      '<div class="ai-catalog-description"><label class="field-label">Product info</label><textarea class="ai-textarea" data-product-field="description" maxlength="1000" rows="2" placeholder="Material, fit, sizes, colours, or confirmed details">' + escapeHtml(product.description || '') + '</textarea></div>' +
+      '</div><button class="catalog-remove-button" type="button" data-remove-catalog aria-label="Remove product">Remove</button>';
+    $('aiCatalogList').appendChild(row);
+  }
+
+  function renderCatalogProducts(products) {
+    const list = $('aiCatalogList');
+    if (!list) return;
+    list.replaceChildren();
+    (Array.isArray(products) ? products : []).slice(0,200).forEach(product => addCatalogProductRow(product));
+  }
+
+  function readCatalogProducts() {
+    return Array.from($('aiCatalogList').querySelectorAll('[data-catalog-row]')).map(row => {
+      const value = key => String(row.querySelector('[data-product-field="' + key + '"]').value || '').trim();
+      return {name:value('name').slice(0,160), price:value('price').slice(0,80), category:value('category').slice(0,120), description:value('description').slice(0,1000)};
+    }).filter(product => product.name).slice(0,200);
+  }
+
+  async function syncAiProfileForApi(profile) {
+    const response = await fetch('/api/keys', {method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({action:'sync_profile',profile})});
+    if (!response.ok) throw new Error('Could not sync profile with the local API service.');
+    return readResponse(response);
+  }
+
+  async function openApiKeyManager(profileId) {
+    const profile = getAiProfile(profileId);
+    if (!profile) return;
+    state.apiProfileId = profile.id;
+    $('apiKeyTitle').textContent = 'API access · ' + profile.name;
+    $('apiKeyStatus').textContent = '';
+    $('apiKeyValue').value = '';
+    $('apiKeyReveal').hidden = true;
+    $('apiEndpoint').value = window.location.origin + '/v1/chat/completions';
+    $('apiKeyList').innerHTML = '<p class="api-empty">Loading keys…</p>';
+    $('apiKeyDialog').showModal();
+    await loadApiKeys();
+  }
+
+  async function loadApiKeys() {
+    if (!state.apiProfileId) return;
+    try {
+      const response = await readResponse(await fetch('/api/keys?profile_id=' + encodeURIComponent(state.apiProfileId), {headers:{Accept:'application/json'},cache:'no-store'}));
+      const keys = Array.isArray(response.keys) ? response.keys : [];
+      $('apiKeyList').innerHTML = keys.length ? keys.map(key => '<div class="api-key-row"><div class="api-key-meta"><strong>' + escapeHtml(key.name || 'API key') + '</strong><span>Created ' + escapeHtml(new Date(Number(key.created_at || Date.now())).toLocaleString()) + '</span><code>' + escapeHtml(key.prefix || 'inc_live_') + '…</code></div><button class="dialog-secondary api-revoke-button" type="button" data-revoke-api-key="' + escapeHtml(key.id) + '">Revoke</button></div>').join('') : '<p class="api-empty">No active keys for this AI yet.</p>';
+    } catch (_) { $('apiKeyList').innerHTML = '<p class="api-empty">Could not load API keys. Keep the Incandescent service running and try again.</p>'; }
+  }
+
+  async function generateApiKey() {
+    const profile = getAiProfile(state.apiProfileId);
+    if (!profile) { $('apiKeyStatus').textContent = 'Save the AI before creating a key.'; return; }
+    const button = $('generateApiKey');
+    button.disabled = true;
+    $('apiKeyStatus').textContent = 'Generating key…';
+    try {
+      const response = await readResponse(await fetch('/api/keys', {method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({action:'create',profile})}));
+      $('apiKeyValue').value = response.key || '';
+      $('apiKeyReveal').hidden = !response.key;
+      $('apiEndpoint').value = response.endpoint || (window.location.origin + '/v1/chat/completions');
+      $('apiKeyStatus').textContent = response.key ? 'Key generated. Copy and store it safely now.' : 'The service did not return a key.';
+      await loadApiKeys();
+    } catch (error) { $('apiKeyStatus').textContent = friendlyError(error); }
+    finally { button.disabled = false; }
+  }
+
+  async function revokeApiKey(keyId) {
+    if (!window.confirm('Revoke this key? Any integration using it will stop working.')) return;
+    try {
+      await readResponse(await fetch('/api/keys', {method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({action:'revoke',key_id:keyId})}));
+      $('apiKeyStatus').textContent = 'Key revoked.';
+      await loadApiKeys();
+    } catch (error) { $('apiKeyStatus').textContent = friendlyError(error); }
   }
 
   function createLocalId() {
@@ -1871,6 +2102,7 @@
       state.customAIs.unshift(profile);
     }
     if (!await persistAiProfiles()) { $('aiBuilderStatus').textContent = 'Saving failed. Your changes are still in this session.'; return; }
+    syncAiProfileForApi(profile).catch(() => {});
     state.customAIs.sort((a,b) => Number(b.updatedAt || 0) - Number(a.updatedAt || 0));
     renderAiProfiles();
     $('aiBuilderDialog').close();
@@ -2295,7 +2527,18 @@
   $('aiBuilderCancel').addEventListener('click', () => $('aiBuilderDialog').close());
   $('aiBuilderSave').addEventListener('click', () => saveAiProfile(false));
   $('aiBuilderSaveTest').addEventListener('click', () => saveAiProfile(true));
+  $('addCatalogProduct').addEventListener('click', () => {
+    const list = $('aiCatalogList');
+    if (list.querySelectorAll('[data-catalog-row]').length >= 200) { $('aiBuilderStatus').textContent = 'The local builder supports up to 200 products per AI profile.'; return; }
+    addCatalogProductRow();
+  });
+  $('aiCatalogList').addEventListener('click', event => { const button = event.target.closest('[data-remove-catalog]'); if (button) button.closest('[data-catalog-row]').remove(); });
   $('aiBuilderForm').addEventListener('submit', event => event.preventDefault());
+  $('apiKeyClose').addEventListener('click', () => { $('apiKeyValue').value = ''; $('apiKeyReveal').hidden = true; $('apiKeyDialog').close(); });
+  $('apiKeyDone').addEventListener('click', () => { $('apiKeyValue').value = ''; $('apiKeyReveal').hidden = true; $('apiKeyDialog').close(); });
+  $('generateApiKey').addEventListener('click', generateApiKey);
+  $('copyApiKey').addEventListener('click', async () => { const key = $('apiKeyValue').value; if (!key) return; try { await navigator.clipboard.writeText(key); $('apiKeyStatus').textContent = 'Key copied.'; } catch (_) { $('apiKeyValue').focus(); $('apiKeyValue').select(); $('apiKeyStatus').textContent = 'Press Ctrl+C to copy the selected key.'; } });
+  $('apiKeyList').addEventListener('click', event => { const button = event.target.closest('[data-revoke-api-key]'); if (button) revokeApiKey(button.dataset.revokeApiKey); });
   $('switchDefaultAi').addEventListener('click', async () => {
     await persistActiveChat();
     state.conversationId = null;
