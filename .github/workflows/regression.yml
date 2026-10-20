@@ -20,6 +20,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Check inline browser JavaScript syntax
+        run: |
+          python -c "from pathlib import Path; import re; h=Path('index.html').read_text(encoding='utf-8'); m=re.search(r'<script>(.*?)</script>', h, re.S); assert m, 'main script not found'; Path('/tmp/incandescent-ui.js').write_text(m.group(1), encoding='utf-8')"
+          node --check /tmp/incandescent-ui.js
       - name: Run core regression suite
         run: |
           python test_engine.py
