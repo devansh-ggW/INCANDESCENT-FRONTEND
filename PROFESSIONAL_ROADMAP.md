@@ -36,3 +36,14 @@
 - API credentials and synced API profiles are stored in a runtime-generated incandescent_api_data.json; do not commit that generated file.
 - Launcher opens the local URL in a normal Chrome window instead of app mode.
 - Full runtime verification still needs to be done on the target Windows PC, including model/image routing, API key revocation, and external integration under the chosen hosting strategy.
+
+
+## Updated local business AI and API access
+- Updated light, neutral workspace styling with restrained controls and simpler visual hierarchy; the readiness indicator is hidden from the top bar.
+- Expanded assistant profiles with business identity, contact, website, location, hours, refund/return policies, shipping, payment methods, other policies, custom info, and a repeatable product catalog.
+- Assistant system context explicitly prevents invented policy/product facts, enforces the configured name, and permits general questions outside the business domain.
+- Image requests can automatically route to an installed vision-capable Ollama model (including local Qwen3.5 2B if present) while keeping the configured text model as the default.
+- Added local API key creation, SHA-256 hash-only storage, listing/revocation, and an authenticated OpenAI-compatible chat-completions endpoint with no application-level request quota.
+- API credentials and synced API profiles are stored in a runtime-generated incandescent_api_data.json; do not commit that generated file.
+- Launcher opens the local URL in a normal Chrome window instead of app mode.
+- Full runtime verification still needs to be done on the target Windows PC, including model/image routing, API key revocation, and external integration under the chosen hosting strategy.
