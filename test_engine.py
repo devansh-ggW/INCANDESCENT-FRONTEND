@@ -107,7 +107,7 @@ try:
     with urllib.request.urlopen(base + "/", timeout=5) as response:
         check(response.status == 200, "homepage responds")
         page = response.read().decode("utf-8")
-        check("INCANDESCENT AI" in page and "id=\"sidebar\"" in page and "Copy code" in page and "modelSelect" not in page, "updated frontend served without provider controls")
+        check("INCANDESCENT" in page and 'id="sidebar"' in page and "Copy code" in page and "modelSelect" in page and "apiKeyDialog" in page, "updated frontend serves workspace, model selector, and API key manager")
     payload = {"conversation_id": "test-stream-chat", "message": "yo bro what is 2+2", "history": []}
     request = urllib.request.Request(base + "/api/chat/stream", data=json.dumps(payload).encode(), headers={"Content-Type": "application/json", "Accept": "application/x-ndjson"}, method="POST")
     with urllib.request.urlopen(request, timeout=5) as response:
