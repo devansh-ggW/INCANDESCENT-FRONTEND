@@ -909,7 +909,7 @@ MAX_ATTACHMENT_TEXT_CHARS = 1_200_000
 
 def model_supports_vision(model_name: str) -> bool:
     """Conservative local-model name detection; unknown models are not assumed visual."""
-    name = (model_name or "").split(":", 1)[0].lower().replace("-", "").replace("_", "")
+    name = (model_name or "").split(":", 1)[0].lower().replace("-", "").replace("_", "").replace(".", "")
     markers = ("llava", "minicpmv", "qwen25vl", "qwen2vl", "qwen3vl", "qwen35", "gemma3", "gemma4", "moondream", "llama32vision", "granite32vision", "internvl", "bakllava")
     return any(marker in name for marker in markers)
 
