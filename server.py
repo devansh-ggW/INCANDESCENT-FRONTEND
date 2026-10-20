@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 import html.parser
 import hashlib
+import ipaddress
 import io
 import json
 import mimetypes
@@ -25,7 +26,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 APP_NAME = "INCANDESCENT"
-HOST = "127.0.0.1"
+HOST = os.environ.get("INCANDESCENT_HOST", "127.0.0.1").strip() or "127.0.0.1"
 PORT = int(os.environ.get("INCANDESCENT_PORT", "8765"))
 
 
@@ -1094,7 +1095,8 @@ def process_chat(payload: Dict[str, Any], conversation_id: str, event: threading
         if stream_callback:
             stream_callback("status", "Thinking…")
         try:
-            reply = ollama_request(messages, use_tools=False, stream_callback=stream_callback, event=event, model_override=vision_model)
+            model_kwargs = {"model_override": vision_model} if vision_model else {}
+            reply = ollama_request(messages, use_tools=False, stream_callback=stream_callback, event=event, **model_kwargs)
             if event.is_set():
                 return {"ok": False, "cancelled": True, "message": "Request cancelled.", "files": []}
             answer = str(reply.get("content", "") or "").strip()
@@ -1118,7 +1120,8 @@ def process_chat(payload: Dict[str, Any], conversation_id: str, event: threading
         if stream_callback:
             stream_callback("status", "Building and checking project · step %s/%s" % (step + 1, MAX_AGENT_STEPS))
         try:
-            reply = ollama_request(messages, use_tools=True, event=event, model_override=vision_model)
+            model_kwargs = {"model_override": vision_model} if vision_model else {}
+            reply = ollama_request(messages, use_tools=True, event=event, **model_kwargs)
         except RuntimeError as exc:
             if _has_artifact_changes(conversation_id, baseline_files):
                 final_text = "The model call stopped before finishing. Any attached files are real artifacts, but full verification did not complete. Details: %s" % exc
@@ -1365,8 +1368,9 @@ class Handler(BaseHTTPRequestHandler):
         """Reduce DNS-rebinding/cross-origin exposure; this service is localhost-only."""
         host_header = self.headers.get("Host", "")
         try:
+            client_ip = ipaddress.ip_address(self.client_address[0].split("%", 1)[0])
             host_parts = urllib.parse.urlsplit("//" + host_header)
-            if host_parts.hostname not in {"127.0.0.1", "localhost"}:
+            if not client_ip.is_loopback or host_parts.hostname not in {"127.0.0.1", "localhost"}:
                 self.send_json(403, {"ok": False, "error": "This application only accepts requests from its trusted interface."})
                 return True
             origin = self.headers.get("Origin")
@@ -1534,6 +1538,9 @@ class Handler(BaseHTTPRequestHandler):
                 payload = self.read_json()
             except (ValueError, json.JSONDecodeError, UnicodeDecodeError) as exc:
                 status, error = _openai_error(400, str(exc)); self.send_json(status, error); return
+            if payload.get("stream") is True:
+                status, error = _openai_error(400, "Streaming is not supported by this local API endpoint yet. Send stream=false or omit stream.")
+                self.send_json(status, error); return
             raw_messages = payload.get("messages")
             if not isinstance(raw_messages, list) or not raw_messages:
                 status, error = _openai_error(400, "Provide a non-empty messages array.")
