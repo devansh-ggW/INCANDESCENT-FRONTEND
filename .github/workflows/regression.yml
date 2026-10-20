@@ -1,0 +1,26 @@
+name: Incandescent regression checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Set up Node for JavaScript syntax checks
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run core regression suite
+        run: |
+          python test_engine.py
+          python test_features.py
