@@ -74,6 +74,7 @@ if errorlevel 1 (
 
 :RuntimeReady
 set "INCANDESCENT_MODEL=photon1"
+echo Selected model: %INCANDESCENT_MODEL%
 set "BUILD_PHOTON=0"
 call ollama show photon1 >nul 2>nul
 if errorlevel 1 set "BUILD_PHOTON=1"
@@ -82,15 +83,18 @@ if not "%BUILD_PHOTON%"=="1" (
   if errorlevel 1 set "BUILD_PHOTON=1"
 )
 if "%BUILD_PHOTON%"=="1" (
-  echo Preparing Photon 1...
-  call ollama create photon1 -f "%~dp0Modelfile" >nul 2>&1
+  echo Preparing Photon 1 from qwen3.5:2b. This can take a little while...
+  call ollama create photon1 -f "%~dp0Modelfile"
   if errorlevel 1 (
-    echo Photon 1 could not be prepared. Using the configured base model directly.
+    echo WARNING: Photon 1 could not be prepared. Falling back to qwen3.5:2b.
     set "INCANDESCENT_MODEL=qwen3.5:2b"
+  ) else (
+    echo Photon 1 is ready.
   )
 )
-rem Run the service in a minimized Incandescent window; users work in the standalone app window.
-start "Incandescent Service" /min cmd /c "%PY% run_incandescent.py"
+rem Keep the service console visible so startup errors and request logs can be inspected.
+echo Starting Incandescent service. Keep the service console open while using the app.
+start "Incandescent Service" cmd /k "%PY% run_incandescent.py"
 set "INCANDESCENT_READY=0"
 for /L %%I in (1,1,20) do (
   call %PY% -c "import sys,urllib.request; urllib.request.urlopen('http://127.0.0.1:%INCANDESCENT_PORT%/api/status', timeout=0.5).read(1)" >nul 2>nul
