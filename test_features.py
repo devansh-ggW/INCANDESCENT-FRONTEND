@@ -245,7 +245,7 @@ finally:
 
 for label in checks:
     print("PASS:", label)
-print("PASS: capability detection and honest vision refusal")
+print("PASS: capability detection and vision-model fallback")
 print("PASS: fast-chat, adaptive code output, project inference presets, and streamed truncation notice")
 print("PASS: real attachments and personalization enter model context")
 print("PASS: image pixels are sent to a selected vision-capable model")
