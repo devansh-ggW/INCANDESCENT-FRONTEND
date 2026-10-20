@@ -4,6 +4,8 @@ import base64
 import importlib.util
 import json
 import threading
+import tempfile
+import urllib.error
 import urllib.request
 from http.server import ThreadingHTTPServer
 from pathlib import Path
@@ -181,6 +183,10 @@ finally:
 
 # The production HTTP handler serves the actual ICO asset with the correct content type.
 old_models = mod.ollama_models
+old_api_store_path = mod.API_STORE_PATH
+old_process_chat = mod.process_chat
+api_temp_dir = tempfile.TemporaryDirectory()
+mod.API_STORE_PATH = str(Path(api_temp_dir.name) / "api-store.json")
 mod.ollama_models = lambda: []
 httpd = ThreadingHTTPServer(("127.0.0.1", 0), mod.Handler)
 thread = threading.Thread(target=httpd.serve_forever, daemon=True)
@@ -195,9 +201,47 @@ try:
     with urllib.request.urlopen(base + "/", timeout=5) as response:
         served = response.read().decode("utf-8")
         check(response.status == 200 and "id=\"personalizationDialog\"" in served, "latest app is served from local backend")
+
+    # Local API key lifecycle: generate once, authenticate, then revoke.
+    profile = {"id":"api-test-profile","name":"Gaz","purpose":"Answer customer questions","business_name":"Dig It Up","custom_info":"Test profile"}
+    create_req = urllib.request.Request(base + "/api/keys", data=json.dumps({"action":"create","profile":profile}).encode(), headers={"Content-Type":"application/json"}, method="POST")
+    with urllib.request.urlopen(create_req, timeout=5) as response:
+        created = json.loads(response.read().decode())
+        check(response.status == 201 and created["key"].startswith("inc_live_"), "API key creation returns a new secret")
+    raw_store = Path(mod.API_STORE_PATH).read_text(encoding="utf-8")
+    check(created["key"] not in raw_store and "key_hash" in raw_store, "API key secret is not persisted in plaintext")
+    with urllib.request.urlopen(base + "/api/keys?profile_id=api-test-profile", timeout=5) as response:
+        listed = json.loads(response.read().decode())
+        check(len(listed["keys"]) == 1 and "key_hash" not in json.dumps(listed), "API listing hides key secrets and hashes")
+
+    captured_api = {}
+    def fake_api_process(payload, conversation_id, event):
+        captured_api["payload"] = payload
+        return {"ok":True,"message":"Hello from Gaz"}
+    mod.process_chat = fake_api_process
+    api_body = {"model":"test","messages":[{"role":"user","content":"Hi"}]}
+    api_req = urllib.request.Request(base + "/v1/chat/completions", data=json.dumps(api_body).encode(), headers={"Content-Type":"application/json","Authorization":"Bearer " + created["key"]}, method="POST")
+    with urllib.request.urlopen(api_req, timeout=5) as response:
+        api_result = json.loads(response.read().decode())
+        check(response.status == 200 and api_result["choices"][0]["message"]["content"] == "Hello from Gaz", "API key authenticates OpenAI-compatible chat endpoint")
+    check(captured_api["payload"]["ai_profile"]["name"] == "Gaz", "API key is bound to its saved assistant")
+
+    revoke_req = urllib.request.Request(base + "/api/keys", data=json.dumps({"action":"revoke","key_id":created["key_id"]}).encode(), headers={"Content-Type":"application/json"}, method="POST")
+    with urllib.request.urlopen(revoke_req, timeout=5) as response:
+        check(json.loads(response.read().decode()).get("revoked") is True, "API key revocation succeeds")
+    try:
+        urllib.request.urlopen(api_req, timeout=5)
+    except urllib.error.HTTPError as exc:
+        check(exc.code == 401, "revoked API key is rejected")
+    else:
+        raise AssertionError("Revoked API key was accepted")
+
 finally:
     httpd.shutdown(); thread.join(timeout=3); httpd.server_close()
     mod.ollama_models = old_models
+    mod.process_chat = old_process_chat
+    mod.API_STORE_PATH = old_api_store_path
+    api_temp_dir.cleanup()
 
 for label in checks:
     print("PASS:", label)
