@@ -99,7 +99,7 @@ check(mod.model_supports_vision("qwen3.5:2b"), "Qwen3.5 2B vision capability is 
 # Uploaded source is stored as real readable project content and included in actual model context.
 old_request, old_model = mod.ollama_request, mod.MODEL
 captured = {}
-def fake_request(messages, use_tools=True, stream_callback=None, event=None):
+def fake_request(messages, use_tools=True, stream_callback=None, event=None, model_override=None):
     captured["messages"] = messages
     captured["use_tools"] = use_tools
     if stream_callback:
@@ -138,16 +138,15 @@ try:
     check("app.py" in mod.CONVERSATION_FILES.get(conv, {}), "attachment retained for file tools in this conversation")
     check(result.get("attachments", [])[0]["filename"] == "app.py", "attachment metadata returned to the UI")
 
-    # Text-only Photon correctly rejects image content instead of pretending it has vision.
+    # Image bytes are validated, then routed to an installed vision-capable model when needed.
     image = {"filename": "screen.png", "kind": "image", "mime_type": "image/png", "data_base64": base64.b64encode(b"\x89PNG\r\n\x1a\n" + b"0" * 8).decode()}
-    try:
-        mod.normalize_attachments([image], "feature-image-test")
-    except ValueError as exc:
-        check("image analysis is not available" in str(exc).lower() and "text and source-code" in str(exc).lower(), "image limitation explains how to proceed")
-    else:
-        raise AssertionError("Text-only Photon 1 silently accepted image payload")
+    with patch.object(mod, "ollama_models", lambda: [{"name":"gemma3:4b"}]):
+        check(mod.vision_model_for_request("photon1") == "gemma3:4b", "text model routes image request to installed vision fallback")
+    mod.normalize_attachments([image], "feature-image-test")
     # A vision-capable model receives the actual image bytes in Ollama's image field.
     mod.MODEL = "gemma3:4b"
+    old_models_for_vision = mod.ollama_models
+    mod.ollama_models = lambda: [{"name":"gemma3:4b"}]
     vision_conv = "feature-vision-payload-test"
     vision_result = mod.process_chat({
         "conversation_id": vision_conv,
@@ -174,6 +173,7 @@ try:
 finally:
     mod.ollama_request = old_request
     mod.MODEL = old_model
+    mod.ollama_models = old_models_for_vision
     for conversation in (conv, "feature-image-test", "feature-vision-payload-test", "feature-rollback-test"):
         file_map = mod.CONVERSATION_FILES.pop(conversation, {})
         for aid in file_map.values():
