@@ -79,15 +79,15 @@ set "BUILD_PHOTON=0"
 call ollama show photon1 >nul 2>nul
 if errorlevel 1 set "BUILD_PHOTON=1"
 if not "%BUILD_PHOTON%"=="1" (
-  call ollama show --modelfile photon1 2>nul | findstr /i /c:"FROM qwen3.5:2b" >nul
+  call ollama show --modelfile photon1 2>nul | findstr /i /c:"FROM qwen3:1.7b-q4_K_M" >nul
   if errorlevel 1 set "BUILD_PHOTON=1"
 )
 if "%BUILD_PHOTON%"=="1" (
-  echo Preparing Photon 1 from qwen3.5:2b. This can take a little while...
+  echo Preparing Photon 1 from qwen3:1.7b-q4_K_M. This can take a little while...
   call ollama create photon1 -f "%~dp0Modelfile"
   if errorlevel 1 (
-    echo WARNING: Photon 1 could not be prepared. Falling back to qwen3.5:2b.
-    set "INCANDESCENT_MODEL=qwen3.5:2b"
+    echo WARNING: Photon 1 could not be prepared. Falling back to qwen3:1.7b-q4_K_M.
+    set "INCANDESCENT_MODEL=qwen3:1.7b-q4_K_M"
   ) else (
     echo Photon 1 is ready.
   )
