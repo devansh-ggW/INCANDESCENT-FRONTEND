@@ -325,6 +325,11 @@
     .settings h3 { margin-bottom: 9px; color: #f4f4f7; letter-spacing: .04em; font-size: 11px; }
     .setting-row { border-top-color: #282b34; color: #aeb2be; }
     .setting-row select { max-width: 170px; min-width: 0; background: #0e1015; color: #f4f5f7; border: 1px solid #373b46; border-radius: 5px; padding: 7px 8px; }
+    .model-picker-row label { color: #aeb2be; font-size: 11px; }
+    .model-picker-row select { max-width: 175px; width: 175px; }
+    .model-picker-status { margin: 8px 0 0; color: #9fa4af; font-size: 10px; line-height: 1.45; }
+    .model-picker-status.error { color: #f0a5a5; }
+    .model-picker-status.success { color: #9ed7b0; }
     .model-setting label { font-size: 12px; color: #e2e4ea; }
     .model-hint { margin: 0 0 9px; color: #848b99; font-size: 10px; line-height: 1.5; }
     .page-nav { flex: 0 0 42px; height: 42px; min-height: 42px; padding: 0 24px; background: #0d0f13; border-bottom: 1px solid #232630; }
@@ -905,6 +910,7 @@
         <div class="setting-row"><span>Compact layout</span><button class="toggle" id="compactToggle" type="button" aria-pressed="false"><i></i></button></div>
         <div class="setting-row"><span>Enter sends message</span><button class="toggle active" id="enterToggle" type="button" aria-pressed="true"><i></i></button></div>
         <div class="setting-row"><span>Refresh interval</span><select id="refreshSelect" aria-label="Refresh interval"><option value="60000">1 minute</option><option value="120000">2 minutes</option><option value="0">Manual only</option></select></div>
+        <div class="setting-row model-picker-row"><label for="modelSelect">AI model</label><select id="modelSelect" aria-label="Choose AI model"><option value="">Loading installed models…</option></select></div><p class="model-picker-status" id="modelPickerStatus" role="status">Checking installed models…</p>
       </section>
     </header>
     <nav class="page-nav" aria-label="Application pages">
@@ -2215,11 +2221,43 @@
     }
   }
 
+  async function loadInstalledModels(keepSelection = true) {
+    const select = $('modelSelect');
+    const note = $('modelPickerStatus');
+    if (!select || !note) return;
+    const previous = keepSelection ? select.value : '';
+    try {
+      const data = await readResponse(await fetch('/api/models', { headers: { Accept: 'application/json' }, cache: 'no-store' }));
+      const models = Array.isArray(data.models) ? data.models : [];
+      select.replaceChildren();
+      if (!models.length) {
+        select.add(new Option('No installed models found', ''));
+        note.textContent = 'No models were returned. Check that the AI service is running.';
+        note.className = 'model-picker-status error';
+        return;
+      }
+      for (const model of models) {
+        const name = String(model.name || '');
+        if (name) select.add(new Option(name, name));
+      }
+      const selected = models.some(model => model.name === previous) ? previous : (data.selected || '');
+      if (selected && Array.from(select.options).some(option => option.value === selected)) select.value = selected;
+      note.textContent = 'Choose an installed model. Changing it affects new replies; wait for any active reply to finish first.';
+      note.className = 'model-picker-status';
+    } catch (error) {
+      select.replaceChildren(new Option('Could not load models', ''));
+      note.textContent = 'Could not load installed models. Restart Incandescent and refresh this list by reopening the app.';
+      note.className = 'model-picker-status error';
+    }
+  }
+
   async function checkStatus() {
     try {
       const data = await readResponse(await fetch('/api/status', { headers: { Accept: 'application/json' }, cache: 'no-store' }));
       if (data.ollama_connected) setStatus('online', 'Ready');
       else setStatus('offline', 'Assistant unavailable');
+      const select = $('modelSelect');
+      if (select && data.model && Array.from(select.options).some(option => option.value === data.model) && select.value !== data.model) select.value = data.model;
     } catch (_) { setStatus('offline', 'Assistant unavailable'); }
   }
 
@@ -2311,8 +2349,37 @@
     const ms = Number(event.target.value);
     if (ms) state.refreshTimer = window.setInterval(checkStatus, ms);
   });
+  $('modelSelect').addEventListener('change', async event => {
+    const select = event.currentTarget;
+    const note = $('modelPickerStatus');
+    const requested = select.value;
+    if (!requested) return;
+    select.disabled = true;
+    note.className = 'model-picker-status';
+    note.textContent = 'Switching model…';
+    try {
+      const response = await fetch('/api/model', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ model: requested })
+      });
+      const data = await readResponse(response);
+      select.value = data.model || requested;
+      note.textContent = 'Now using ' + (data.model_display || data.model || requested) + '. New replies will use this model.';
+      note.className = 'model-picker-status success';
+      await checkStatus();
+    } catch (error) {
+      note.textContent = friendlyError(error);
+      note.className = 'model-picker-status error';
+      await loadInstalledModels(false);
+    } finally {
+      select.disabled = false;
+    }
+  });
+  $('settingsButton').addEventListener('click', () => { loadInstalledModels(true); });
 
   checkStatus();
+  loadInstalledModels(false);
   state.refreshTimer = window.setInterval(checkStatus, 60000);
   render();
   updateSendButton();
