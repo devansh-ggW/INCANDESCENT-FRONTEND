@@ -231,9 +231,8 @@ def custom_ai_system_message(profile: Dict[str, Any]) -> str:
     return "\n\n".join(lines)[:15000]
 
 
-TOOLS: List[Dict[str, Any]] = []
-
-
+def ollama_models() -> List[Dict[str, Any]]:
+    """Return the models exposed by the configured model service."""
     req = urllib.request.Request(OLLAMA_BASE + "/api/tags", headers={"Accept": "application/json"})
     with urllib.request.urlopen(req, timeout=3.0) as response:
         payload = json.loads(response.read(1_000_000).decode("utf-8"))
