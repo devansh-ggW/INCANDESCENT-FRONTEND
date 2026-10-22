@@ -1016,7 +1016,7 @@
         <div class="setting-row"><span>Compact layout</span><button class="toggle" id="compactToggle" type="button" aria-pressed="false"><i></i></button></div>
         <div class="setting-row"><span>Enter sends message</span><button class="toggle active" id="enterToggle" type="button" aria-pressed="true"><i></i></button></div>
         <div class="setting-row"><span>Refresh interval</span><select id="refreshSelect" aria-label="Refresh interval"><option value="60000">1 minute</option><option value="120000">2 minutes</option><option value="0">Manual only</option></select></div>
-        <div class="setting-row model-picker-row"><label for="modelSelect">AI model</label><select id="modelSelect" aria-label="Choose AI model"><option value="">Loading installed models…</option></select></div><p class="model-picker-status" id="modelPickerStatus" role="status">Checking installed models…</p>
+        <div class="setting-row model-picker-row"><label for="modelSelect">AI model</label><select id="modelSelect" aria-label="Choose AI model"><option value="">Loading model choices…</option></select></div><p class="model-picker-status" id="modelPickerStatus" role="status">Loading model choices…</p>
       </section>
     </header>
     <div class="app-layout">
@@ -1126,7 +1126,6 @@
     personalization: '',
     personalizationEnabled: true,
     sending: false,
-    uploading: false,
     controller: null,
     enterSends: true,
     refreshTimer: null,
@@ -1303,8 +1302,8 @@
 
   function progressMarkup() {
     const request = activeRequest();
-    if (!request && !state.uploading) return '';
-    const message = state.uploading ? 'Loading project…' : (request.progress || 'Working…');
+    if (!request) return '';
+    const message = request.progress || 'Working…';
     return '<div class="progress" id="progressMessage" role="status"><span class="spinner"></span><span id="progressText">' + escapeHtml(message) + '</span></div>';
   }
 
@@ -1330,7 +1329,6 @@
     }));
     bindCodeButtons(messagesEl);
     updateSendButton();
-    uploadButton.disabled = state.uploading;
     renderPendingAttachments();
     renderChatHistory();
     renderAiProfiles();
@@ -1424,7 +1422,7 @@
     sendArrow.style.display = 'block';
     sendButton.setAttribute('aria-label', sending ? 'Queue follow-up' : 'Send message');
     sendButton.title = sending ? 'Send follow-up' : 'Send message';
-    sendButton.disabled = state.uploading || !hasDraft;
+    sendButton.disabled = !hasDraft;
     stopButton.classList.toggle('visible', sending);
     stopButton.disabled = !sending;
     stopButton.setAttribute('aria-hidden', String(!sending));
@@ -1444,7 +1442,6 @@
       if (runningSession) cancelCurrentRequest();
       return;
     }
-    if (state.uploading) { showToast('Wait until the current file import finishes.'); return; }
     if (runningSession) {
       runningSession.queuedMessages.push({ text: message, attachments: attachmentDraft });
       state.pendingAttachments = [];
@@ -1482,7 +1479,7 @@
     state.requests.set(conversationId, session);
     syncActiveRequestState();
     const assistantIndex = session.messages.length;
-    session.messages.push({ role: 'assistant', content: '', files: [] });
+    
     render();
     await persistRequestSession(session);
     let finalReceived = false;
@@ -1506,8 +1503,7 @@
           if (data.error && !data.cancelled) session.progress = 'Request failed';
         } else {
           session.messages[assistantIndex].content = String(data.message || session.messages[assistantIndex].content || 'Done.');
-          session.messages[assistantIndex].files = Array.isArray(data.files) ? data.files : [];
-          if (Array.isArray(data.attachments) && data.attachments.length) {
+                    if (Array.isArray(data.attachments) && data.attachments.length) {
             session.messages[assistantIndex].analyzedAttachments = data.attachments.map(item => ({ filename:item.filename, kind:item.kind }));
           }
           if (data.status) session.messages.push({ role: 'notice', content: data.status, success: data.checks_ok === true });
@@ -2134,7 +2130,7 @@
     const attachmentMeta = attachmentDraft.map(item => ({ filename:item.filename, mime_type:item.mime_type, size:item.size }));
     session.messages.push({ role:'user', content:message || 'Please analyze the attached file(s).', attachments:attachmentMeta });
     const assistantIndex = session.messages.length;
-    session.messages.push({ role:'assistant', content:'', files:[] });
+    
     session.controller = new AbortController();
     session.progress = 'Working on queued follow-up…';
     state.requests.set(conversationId, session);
@@ -2165,8 +2161,7 @@
           if (data.cancelled) session.messages[assistantIndex].content = 'Request cancelled.';
         } else {
           session.messages[assistantIndex].content = String(data.message || session.messages[assistantIndex].content || 'Done.');
-          session.messages[assistantIndex].files = Array.isArray(data.files) ? data.files : [];
-          if (Array.isArray(data.attachments) && data.attachments.length) session.messages[assistantIndex].analyzedAttachments = data.attachments.map(item => ({ filename:item.filename, kind:item.kind }));
+                    if (Array.isArray(data.attachments) && data.attachments.length) session.messages[assistantIndex].analyzedAttachments = data.attachments.map(item => ({ filename:item.filename, kind:item.kind }));
           if (data.status) session.messages.push({ role:'notice', content:data.status, success:data.checks_ok === true });
           if (Array.isArray(data.test_results) && data.test_results.length) session.messages.push({ role:'notice', content:'Checks: ' + data.test_results.join(' · '), success:data.checks_ok === true });
         }
@@ -2307,8 +2302,8 @@
       const models = Array.isArray(data.models) ? data.models : [];
       select.replaceChildren();
       if (!models.length) {
-        select.add(new Option('No installed models found', ''));
-        note.textContent = 'No models were returned. Check that the AI service is running.';
+        select.add(new Option('No model choices available', ''));
+        note.textContent = 'Model choices are currently unavailable. Reopen settings and try again.';
         note.className = 'model-picker-status error';
         return;
       }
