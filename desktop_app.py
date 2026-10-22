@@ -122,6 +122,10 @@ def main() -> int:
     os.environ.setdefault("INCANDESCENT_MODEL", DEFAULT_MODEL)
     os.environ["INCANDESCENT_HOST"] = HOST
 
+    if "--setup-model" in sys.argv[1:]:
+        from model_setup import run_model_setup
+        return run_model_setup(data_dir)
+
     try:
         from PyQt5.QtCore import Qt, QUrl
         from PyQt5.QtGui import QDesktopServices, QIcon
