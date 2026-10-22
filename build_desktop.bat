@@ -29,14 +29,12 @@ py -3.11 -m PyInstaller --noconfirm --clean --onefile --windowed ^
   --add-data "incandescent.ico;." ^
   --hidden-import server ^
   --hidden-import run_incandescent ^
-  --collect-all PyQt5 ^
-  --collect-all PyQt5.QtWebEngineWidgets ^
   desktop_app.py
 if errorlevel 1 goto failed
 
 echo.
 echo Build complete: dist\INCANDESCENT.exe
-echo This EXE bundles its own Qt WebEngine renderer.
+echo The EXE bundles Qt WebEngine and does not require WebView2.
 echo.
 pause
 exit /b 0

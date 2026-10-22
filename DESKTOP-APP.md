@@ -4,7 +4,9 @@ The Windows desktop build wraps the existing index.html unchanged in a native ap
 
 ## Desktop renderer
 
-The app bundles Qt 5 WebEngine (Chromium-based) inside its EXE. It does not require Microsoft Edge WebView2 to be installed separately. The trade-off is that this uses an older embedded Chromium base for compatibility with older Windows systems; do not use this embedded window as a general-purpose browser or to open arbitrary internet sites. The app only loads its own loopback interface.
+The app bundles Qt WebEngine (Chromium-based) inside its EXE. It does not require Microsoft Edge WebView2 to be installed separately. The renderer is intended only for the local INCANDESCENT UI; HTTP(S) links opened by the user are sent to the normal system browser instead of navigating the embedded engine.
+
+The compatible Qt 5 WebEngine package uses an older Chromium baseline. The host restricts navigation to its loopback app, but this should not be used as a general-purpose browser or deployed to untrusted pages. A real smoke test on the target Windows build is required before claiming support for that exact OS build.
 
 ## Build
 

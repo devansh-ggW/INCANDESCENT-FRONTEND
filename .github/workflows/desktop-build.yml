@@ -63,18 +63,24 @@ jobs:
           --add-data "incandescent.ico;."
           --hidden-import server
           --hidden-import run_incandescent
-          --collect-all PyQt5
-          --collect-all PyQt5.QtWebEngineWidgets
           desktop_app.py
 
-      - name: Verify executable was produced
+      - name: Verify bundled renderer files
         shell: pwsh
         run: |
           $exe = "dist/INCANDESCENT.exe"
           if (!(Test-Path $exe)) { throw "Build did not create $exe" }
           $item = Get-Item $exe
-          if ($item.Length -lt 10000000) { throw "EXE looks too small to contain the embedded renderer: $($item.Length) bytes." }
+          if ($item.Length -lt 30000000) { throw "EXE looks too small to contain the renderer: $($item.Length) bytes." }
+          $archive = & pyi-archive_viewer -l -r $exe 2>&1 | Out-String
+          $archive | Set-Content -Encoding UTF8 dist/archive-list.txt
+          foreach ($name in @("QtWebEngineProcess.exe", "qtwebengine_resources.pak", "server", "run_incandescent")) {
+            if ($archive -notmatch [regex]::Escape($name)) {
+              throw "Expected bundled runtime/module was not found in the EXE archive: $name"
+            }
+          }
           Write-Host "Built $($item.Name): $($item.Length) bytes"
+          Remove-Item dist/archive-list.txt
 
       - name: Add quick-start note and archive
         shell: pwsh
@@ -86,8 +92,8 @@ jobs:
           2. Make sure Ollama is installed, running, and your chosen model is installed.
           3. Double-click INCANDESCENT.exe.
           4. The app defaults to qwen3.5:2b. Select another installed model in Settings if needed.
-          5. This build includes its renderer and does not require a separate WebView2 install.
-          6. If startup still fails, check %LOCALAPPDATA%\INCANDESCENT\desktop.log.
+          5. The renderer is bundled; a separate WebView2 install is not required.
+          6. If startup fails, check %LOCALAPPDATA%\INCANDESCENT\desktop.log.
 
           Ollama and model weights are not included. Python is not required on the target PC.
           '@ | Set-Content -Encoding UTF8 dist/QUICK-START.txt
