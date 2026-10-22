@@ -1,26 +1,17 @@
 #!/usr/bin/env python3
-"""INCANDESCENT artifact and conversation service. Python standard library only."""
+"""INCANDESCENT conversational service with text and image analysis."""
 from __future__ import annotations
 
-import ast
-import html.parser
 import ipaddress
-import io
 import json
-import mimetypes
 import os
 import re
 import secrets
-import shutil
-import subprocess
-import tempfile
 import threading
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
-import zipfile
-from collections import defaultdict
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
@@ -102,10 +93,10 @@ def json_bytes(value: Any) -> bytes:
 
 
 def safe_filename(name: str) -> str:
-    """Validate a relative artifact path while preserving safe project folders."""
+    """Validate a safe attachment filename or relative source path."""
     raw = str(name or "").strip().replace(chr(92), "/")
     if not raw or raw.startswith("/") or re.match(r"^[A-Za-z]:", raw) or chr(0) in raw:
-        raise ValueError("Choose a relative path, such as src/App.jsx or index.html.")
+        raise ValueError("Choose a valid attachment filename or relative source path.")
     parts = raw.split("/")
     if len(parts) > 10 or any(part.strip() in {"", ".", ".."} for part in parts):
         raise ValueError("Paths must be relative and cannot contain empty, '.' or '..' segments.")
