@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import ast
 import html.parser
-import hashlib
 import ipaddress
 import io
 import json
@@ -79,8 +78,6 @@ OLLAMA_TIMEOUT_SECONDS = 180
 LOCK = threading.RLock()
 MODEL_LOCK = threading.Lock()  # Keep CPU/RAM use predictable on an 8 GB machine.
 INFERENCE_MARKER_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".incandescent-inference-active")
-API_STORE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "incandescent_api_data.json")
-API_STORE_LOCK = threading.RLock()
 ARTIFACTS: Dict[str, Dict[str, Any]] = {}
 CONVERSATION_FILES: Dict[str, Dict[str, str]] = defaultdict(dict)  # conversation -> filename -> artifact ID
 CANCEL_EVENTS: Dict[str, threading.Event] = {}
@@ -1086,47 +1083,6 @@ def process_chat(payload: Dict[str, Any], conversation_id: str, event: threading
         answer = "I was unable to produce a usable response. Try rephrasing the request or attaching a clearer image."
     return {"ok": True, "conversation_id": conversation_id, "message": answer, "files": [], "attachments": attachment_metadata, "status": None, "checks_ok": None, "test_results": []}
 
-def _load_api_store() -> Dict[str, Any]:
-    """Load API keys and synced profile data. Only hashes of key secrets are stored."""
-    try:
-        with open(API_STORE_PATH, "r", encoding="utf-8") as handle:
-            data = json.load(handle)
-        if isinstance(data, dict):
-            profiles, keys = data.get("profiles", {}), data.get("keys", [])
-            return {"profiles": profiles if isinstance(profiles, dict) else {}, "keys": keys if isinstance(keys, list) else []}
-    except (OSError, ValueError, json.JSONDecodeError):
-        pass
-    return {"profiles": {}, "keys": []}
-
-
-def _save_api_store(data: Dict[str, Any]) -> None:
-    """Atomically save local API data without ever persisting raw API keys."""
-    folder = os.path.dirname(os.path.abspath(API_STORE_PATH))
-    descriptor, temporary_path = tempfile.mkstemp(prefix=".incandescent-api-", suffix=".tmp", dir=folder)
-    try:
-        with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as handle:
-            json.dump(data, handle, ensure_ascii=False, separators=(",", ":"))
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.replace(temporary_path, API_STORE_PATH)
-    finally:
-        try:
-            if os.path.exists(temporary_path):
-                os.unlink(temporary_path)
-        except OSError:
-            pass
-
-
-def _public_api_key(record: Dict[str, Any]) -> Dict[str, Any]:
-    return {"id": str(record.get("id", "")), "name": str(record.get("name", "API key")),
-            "profile_id": str(record.get("profile_id", "")), "created_at": float(record.get("created_at", 0) or 0),
-            "prefix": str(record.get("prefix", "inc_live_"))}
-
-
-def _openai_error(status: int, message: str, error_type: str = "invalid_request_error") -> Tuple[int, Dict[str, Any]]:
-    return status, {"error": {"message": message, "type": error_type}}
-
-
 class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
     server_version = "INCANDESCENT/2.0"
@@ -1171,7 +1127,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def send_json(self, status: int, payload: Dict[str, Any]) -> None:
         path = urllib.parse.urlsplit(self.path).path
-        extra = {"Access-Control-Allow-Origin": "*", "Vary": "Origin"} if path == "/v1/chat/completions" else None
+        extra = {"Access-Control-Allow-Origin": "*", "Vary": "Origin"} if path == "" else None
         self.send_bytes(status, json_bytes(payload), extra_headers=extra)
 
     def read_json(self) -> Dict[str, Any]:
@@ -1212,187 +1168,12 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as exc:
                 self.send_json(503, {"ok": False, "error": "The AI service is unavailable. Check the application setup and try again.", "models": [], "selected": MODEL})
             return
-        if path == "/api/keys":
-            query = urllib.parse.parse_qs(parsed_url.query)
-            profile_id = str((query.get("profile_id") or [""])[0])[:80]
-            with API_STORE_LOCK:
-                store = _load_api_store()
-                public_keys = [_public_api_key(item) for item in store["keys"] if isinstance(item, dict) and (not profile_id or item.get("profile_id") == profile_id)]
-            self.send_json(200, {"ok": True, "keys": public_keys})
-            return
-        match = re.fullmatch(r"/api/files/([A-Za-z0-9_-]+)(/preview)?", path)
-        if match:
-            aid, preview = match.group(1), bool(match.group(2))
-            with LOCK: artifact = ARTIFACTS.get(aid)
-            if not artifact:
-                self.send_json(404, {"ok": False, "error": "This file is no longer available. Regenerate it and try again."}); return
-            if preview:
-                if "bytes" in artifact:
-                    self.send_json(415, {"ok": False, "error": "Binary artifacts cannot be previewed as text."}); return
-                self.send_bytes(200, artifact["content"].encode("utf-8"), "text/plain; charset=utf-8"); return
-            filename = artifact["filename"].replace("\r", "").replace("\n", "").replace('"', "")
-            data = artifact["bytes"] if "bytes" in artifact else artifact["content"].encode("utf-8")
-            ascii_name = re.sub(r"[^A-Za-z0-9_.-]", "_", filename.replace("/", "_")) or "download"
-            disposition = "attachment; filename=\"%s\"; filename*=UTF-8''%s" % (ascii_name, urllib.parse.quote(filename, safe=""))
-            self.send_bytes(200, data, artifact["mime_type"] + ("; charset=utf-8" if artifact["mime_type"].startswith("text/") else ""), {"Content-Disposition": disposition}); return
         self.send_bytes(404, b"Not found", "text/plain; charset=utf-8")
-
-    def do_OPTIONS(self) -> None:
-        if urllib.parse.urlsplit(self.path).path != "/v1/chat/completions":
-            self.send_response(404); self.send_header("Content-Length", "0"); self.end_headers(); return
-        self.send_response(204)
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Authorization, Content-Type")
-        self.send_header("Access-Control-Max-Age", "600")
-        if self.headers.get("Access-Control-Request-Private-Network", "").lower() == "true":
-            self.send_header("Access-Control-Allow-Private-Network", "true")
-        self.send_header("Content-Length", "0")
-        self.end_headers()
 
     def do_POST(self) -> None:
         parsed_url = urllib.parse.urlsplit(self.path)
         path = parsed_url.path
-        if path != "/v1/chat/completions" and self.reject_nonlocal_request(): return
-
-        if path == "/api/keys":
-            try:
-                payload = self.read_json()
-            except (ValueError, json.JSONDecodeError, UnicodeDecodeError) as exc:
-                self.send_json(400, {"ok": False, "error": str(exc)}); return
-            action = str(payload.get("action", "")).strip()
-            with API_STORE_LOCK:
-                store = _load_api_store()
-                if action in {"sync_profile", "create"}:
-                    profile = normalize_ai_profile(payload.get("profile"))
-                    if not profile or not str(profile.get("id", "")).strip():
-                        self.send_json(400, {"ok": False, "error": "Save a named assistant before creating API access."}); return
-                    profile_id = str(profile["id"])
-                    store["profiles"][profile_id] = profile
-                    if action == "sync_profile":
-                        _save_api_store(store)
-                        self.send_json(200, {"ok": True, "profile_id": profile_id})
-                        return
-                    raw_key = "inc_live_" + secrets.token_urlsafe(32)
-                    record = {"id": secrets.token_urlsafe(12), "name": profile["name"] + " key", "profile_id": profile_id,
-                              "created_at": time.time(), "prefix": raw_key[:15],
-                              "key_hash": hashlib.sha256(raw_key.encode("utf-8")).hexdigest()}
-                    store["keys"].append(record)
-                    _save_api_store(store)
-                    self.send_json(201, {"ok": True, "key": raw_key, "key_id": record["id"], "profile_id": profile_id,
-                                         "endpoint": "http://127.0.0.1:%s/v1/chat/completions" % PORT,
-                                         "note": "Copy this key now. The raw secret is not stored and cannot be shown again."})
-                    return
-                if action == "revoke":
-                    key_id = str(payload.get("key_id", ""))[:80]
-                    old_count = len(store["keys"])
-                    store["keys"] = [item for item in store["keys"] if not (isinstance(item, dict) and item.get("id") == key_id)]
-                    if len(store["keys"]) == old_count:
-                        self.send_json(404, {"ok": False, "error": "That API key was not found or was already revoked."}); return
-                    _save_api_store(store)
-                    self.send_json(200, {"ok": True, "revoked": True})
-                    return
-                self.send_json(400, {"ok": False, "error": "Choose a valid API key action."})
-            return
-
-        if path == "/v1/chat/completions":
-            authorization = self.headers.get("Authorization", "")
-            token = authorization[7:].strip() if authorization.lower().startswith("bearer ") else ""
-            token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest() if token else ""
-            with API_STORE_LOCK:
-                store = _load_api_store()
-                record = next((item for item in store["keys"] if isinstance(item, dict) and token_hash and secrets.compare_digest(str(item.get("key_hash", "")), token_hash)), None)
-                profile = dict(store["profiles"].get(str(record.get("profile_id", "")), {})) if record else {}
-            if not record or not profile:
-                status, error = _openai_error(401, "Invalid or revoked API key.", "authentication_error")
-                self.send_json(status, error); return
-            try:
-                payload = self.read_json()
-            except (ValueError, json.JSONDecodeError, UnicodeDecodeError) as exc:
-                status, error = _openai_error(400, str(exc)); self.send_json(status, error); return
-            if payload.get("stream") is True:
-                status, error = _openai_error(400, "Streaming is not supported by this local API endpoint yet. Send stream=false or omit stream.")
-                self.send_json(status, error); return
-            raw_messages = payload.get("messages")
-            if not isinstance(raw_messages, list) or not raw_messages:
-                status, error = _openai_error(400, "Provide a non-empty messages array.")
-                self.send_json(status, error); return
-            text_messages: List[Dict[str, str]] = []
-            image_attachments: List[Dict[str, str]] = []
-            last_user_text = ""
-            import base64
-            for item in raw_messages[-(MAX_HISTORY_MESSAGES + 2):]:
-                if not isinstance(item, dict) or item.get("role") not in {"user", "assistant"}:
-                    continue
-                content = item.get("content", "")
-                extracted_text = ""
-                if isinstance(content, str):
-                    extracted_text = content
-                elif isinstance(content, list):
-                    chunks = []
-                    for part in content:
-                        if not isinstance(part, dict): continue
-                        if part.get("type") == "text" and isinstance(part.get("text"), str):
-                            chunks.append(part["text"])
-                        elif part.get("type") == "image_url":
-                            image_info = part.get("image_url") if isinstance(part.get("image_url"), dict) else {}
-                            url = str(image_info.get("url", ""))
-                            match = re.fullmatch(r"data:(image/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)", url)
-                            if match:
-                                mime = match.group(1)
-                                ext = {"image/png": "png", "image/jpeg": "jpg", "image/webp": "webp"}[mime]
-                                image_attachments.append({"kind":"image","filename":"api-image-%s.%s" % (len(image_attachments)+1, ext),"mime_type":mime,"data_base64":match.group(2)})
-                            else:
-                                chunks.append("[For image analysis, send PNG, JPEG, or WebP image data as a base64 data URL.]")
-                    extracted_text = "\n".join(chunks)
-                if extracted_text.strip():
-                    text_messages.append({"role":item["role"],"content":extracted_text.strip()})
-                    if item["role"] == "user": last_user_text = extracted_text.strip()
-            if not last_user_text:
-                status, error = _openai_error(400, "Include a non-empty user message.")
-                self.send_json(status, error); return
-            last_user_index = max(i for i,item in enumerate(text_messages) if item["role"] == "user")
-            last_user_text = text_messages[last_user_index]["content"]
-            history = text_messages[:last_user_index]
-            api_conversation_id = "api_" + secrets.token_urlsafe(18)
-            try:
-                set_inference_active(True)
-                result = process_chat({"message":last_user_text,"history":history[-MAX_HISTORY_MESSAGES:],"ai_profile":profile,"attachments":image_attachments}, api_conversation_id, threading.Event())
-                if not result.get("ok"):
-                    status, error = _openai_error(502, str(result.get("message") or "The model request failed."), "server_error")
-                    self.send_json(status, error); return
-                self.send_json(200, {"id":"chatcmpl-" + secrets.token_urlsafe(15),"object":"chat.completion","created":int(time.time()),
-                                     "model":profile.get("name", "Incandescent assistant"),
-                                     "choices":[{"index":0,"message":{"role":"assistant","content":str(result.get("message", ""))},"finish_reason":"stop"}]})
-            except ValueError as exc:
-                status, error = _openai_error(400, str(exc)); self.send_json(status, error)
-            except Exception as exc:
-                status, error = _openai_error(500, "Local model request failed: " + str(exc), "server_error"); self.send_json(status, error)
-            finally:
-                set_inference_active(False)
-            return
-
-        # ZIP upload is raw application/zip, not base64 JSON, to avoid doubling RAM use.
-        if path == "/api/upload":
-            length = int(self.headers.get("Content-Length", "0") or 0)
-            if length <= 0 or length > MAX_PROJECT_ZIP_BYTES:
-                self.send_json(413, {"ok": False, "error": "Project archive must be between 1 byte and 12 MB."}); return
-            try:
-                archive_bytes = self.rfile.read(length)
-                query = urllib.parse.parse_qs(parsed_url.query)
-                conversation_id = str((query.get("conversation_id") or [""])[0] or secrets.token_urlsafe(18))[:120]
-                # Project ZIP inspection is CPU/memory-heavy; allow imports for distinct
-                # conversations but keep a separate guard against replacing live files.
-                with LOCK:
-                    if RUNNING.get(conversation_id):
-                        self.send_json(409, {"ok": False, "error": "Wait for or cancel the response in this conversation before importing a project."})
-                        return
-                self.send_json(200, ingest_project_zip(conversation_id, archive_bytes))
-            except ValueError as exc:
-                self.send_json(400, {"ok": False, "error": str(exc)})
-            except Exception as exc:
-                self.send_json(500, {"ok": False, "error": "Project import failed: " + str(exc)})
-            return
+        if self.reject_nonlocal_request(): return
 
         try:
             payload = self.read_json()
