@@ -29,12 +29,28 @@ py -3.11 -m PyInstaller --noconfirm --clean --onefile --windowed ^
   --add-data "incandescent.ico;." ^
   --hidden-import server ^
   --hidden-import run_incandescent ^
+  --hidden-import model_setup ^
   desktop_app.py
 if errorlevel 1 goto failed
 
 echo.
 echo Build complete: dist\INCANDESCENT.exe
 echo The EXE bundles Qt WebEngine and does not require WebView2.
+echo.
+
+set "ISCC="
+if exist "%ProgramFiles(x86)%\Inno Setup 7\ISCC.exe" set "ISCC=%ProgramFiles(x86)%\Inno Setup 7\ISCC.exe"
+if exist "%ProgramFiles(x86)%\Inno Setup 6\ISCC.exe" set "ISCC=%ProgramFiles(x86)%\Inno Setup 6\ISCC.exe"
+if exist "%ProgramFiles%\Inno Setup 7\ISCC.exe" set "ISCC=%ProgramFiles%\Inno Setup 7\ISCC.exe"
+if exist "%ProgramFiles%\Inno Setup 6\ISCC.exe" set "ISCC=%ProgramFiles%\Inno Setup 6\ISCC.exe"
+if defined ISCC (
+  "%ISCC%" "installer\INCANDESCENT.iss"
+  if errorlevel 1 goto failed
+  echo Installer built: dist\installer\INCANDESCENT-Setup.exe
+) else (
+  echo Inno Setup was not found, so only the desktop EXE was built.
+  echo Install Inno Setup 6.3+ and compile installer\INCANDESCENT.iss to build the installer.
+)
 echo.
 pause
 exit /b 0
