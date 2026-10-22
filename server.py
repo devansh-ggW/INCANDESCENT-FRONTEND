@@ -1034,276 +1034,57 @@ def normalize_attachments(raw: Any, conversation_id: str) -> Tuple[str, List[str
 
 
 def process_chat(payload: Dict[str, Any], conversation_id: str, event: threading.Event, stream_callback: Optional[Callable[[str, str], None]] = None) -> Dict[str, Any]:
-    message = str(payload.get("message", "")).strip()
-    if not message:
-        raise ValueError("Message is empty.")
+    """Generate one text response. Model tool calls and file creation are disabled."""
+    message = str(payload.get("message", "") or "").strip()
+    if not message and not payload.get("attachments"):
+        raise ValueError("Write a message or attach an image/source file.")
     if len(message) > MAX_USER_MESSAGE_CHARS:
-        raise ValueError("That request is too long (%s characters maximum). Split it into smaller tasks." % MAX_USER_MESSAGE_CHARS)
+        raise ValueError("That request is too long (%s characters maximum). Split it into smaller parts." % MAX_USER_MESSAGE_CHARS)
     attachment_text, images, attachment_metadata = normalize_attachments(payload.get("attachments"), conversation_id)
     vision_model = vision_model_for_request(MODEL) if images else None
     if images and not vision_model:
-        raise ValueError("Image identification needs an installed vision model. Qwen3.5 2B is a compatible lightweight option; install it with Ollama and retry.")
+        raise ValueError("Image analysis requires a vision-capable model. Choose an installed model that supports images in Settings.")
     if attachment_text:
-        message = (message + "\n\nPlease inspect the actual attached file contents below. Use exact filenames when discussing them.\n\n" + attachment_text).strip()
+        message = (message + "\n\nPlease analyze the attached source text below and answer in chat. Do not create or claim to create files.\n\n" + attachment_text).strip()
         if len(message) > MAX_USER_MESSAGE_CHARS + MAX_ATTACHMENT_TEXT_CHARS:
-            raise ValueError("Prompt plus file contents exceed the analysis limit. Attach fewer or smaller files.")
+            raise ValueError("Message and source text exceed the analysis limit. Attach fewer or smaller files.")
     personalization = str(payload.get("personalization", "") or "").strip()[:4000] if payload.get("personalization_enabled", True) else ""
     ai_profile = normalize_ai_profile(payload.get("ai_profile"))
     history = normalize_history(payload.get("history"))
-    with LOCK:
-        baseline_files = dict(CONVERSATION_FILES.get(conversation_id, {}))
-    current_files = _visible_artifacts(conversation_id)
-    editing_verbs = re.search(r"\b(?:fix|repair|edit|modify|update|refactor|debug|rewrite|add|remove|change|improve|implement|build|create|write)\b", message, re.I)
-    inline_intent = re.search(r"\b(?:in chat|here in chat|inline|code snippet|snippet only|show (?:me )?(?:an? )?example|just the code|no file|without (?:a )?file|don't create a file|do not create a file|explain how)\b", message, re.I)
-    explanation_intent = re.search(r"\b(?:explain|summarize|summarise|what is|why does|describe)\b", message, re.I)
-    file_required = truthy_file_task(message) or bool(current_files and editing_verbs and not inline_intent and not explanation_intent)
-    request_text = str(payload.get("message", "") or "")
-    analysis_intent = bool(current_files and re.search(r"\b(?:inspect|analyze|analyse|review|understand|map|trace|investigate|find|search|read|list|summarize|summarise|explain|describe|what files|what does|how does|debug|fix|why)\b", request_text, re.I))
-    attached_text_intent = bool(attachment_metadata and re.search(r"\b(?:inspect|analyze|analyse|review|understand|map|trace|investigate|find|search|read|list|summarize|summarise|explain|describe|what does|how does|debug|fix|why)\b", request_text, re.I))
-    tool_required = file_required or analysis_intent or attached_text_intent
-    # Keep all system-level context before prior user/assistant turns. Inserting a
-    # system message after chat history makes some small models follow it inconsistently.
     messages: List[Dict[str, Any]] = [{"role": "system", "content": SYSTEM_PROMPT}]
     if personalization:
         messages.append({"role": "system", "content": "USER PERSONALIZATION (follow when relevant, without sacrificing correctness):\n" + personalization})
     if ai_profile:
         messages.append({"role": "system", "content": custom_ai_system_message(ai_profile)})
-    if current_files:
-        compact_files = [{"filename": f.get("filename"), "mime_type": f.get("mime_type"), "size": f.get("size")} for f in current_files]
-        summary = "Current project inventory. Use list_artifacts/read_artifact before editing; preserve relative paths. Only these uploaded/generated files are available to inspect: " + json.dumps(compact_files, ensure_ascii=False)
-        messages.append({"role": "system", "content": summary[:7000]})
     if history:
         messages.extend(history)
-    user_turn: Dict[str, Any] = {"role": "user", "content": message}
+    user_turn: Dict[str, Any] = {"role": "user", "content": message or "Please analyze the attached image or source file."}
     if images:
         user_turn["images"] = images
         image_names = [item.get("filename", "attached image") for item in attachment_metadata if item.get("kind") == "image"]
-        user_turn["content"] += "\n\nAttached image(s): " + ", ".join(image_names) + ". Analyze the actual image pixels directly; describe only details you can observe, and say if text is unreadable."
+        user_turn["content"] += (
+            "\n\nAnalyze the original image for semantic content. Supporting images may include an edges map and a simplified color-region map. "
+            "Use those views only as secondary evidence about boundaries and large shapes. Do not mistake an edge or color map for a separate real-world object. "
+            "Describe observable objects, layout, visible text when legible, color, and uncertainty. Attached image layers: "
+            + ", ".join(image_names) + "."
+        )
     messages.append(user_turn)
-
-    # Fast path: no tool schemas and no orchestration loop for ordinary chat/snippets.
-    if not tool_required:
-        if stream_callback:
-            stream_callback("status", "Thinking…")
-        try:
-            model_kwargs = {"model_override": vision_model} if vision_model else {}
-            reply = ollama_request(messages, use_tools=False, stream_callback=stream_callback, event=event, **model_kwargs)
-            if event.is_set():
-                return {"ok": False, "cancelled": True, "message": "Request cancelled.", "files": []}
-            answer = str(reply.get("content", "") or "").strip()
-            if not answer:
-                answer = "I didn't get a usable response from the model. Try rephrasing that a little."
-            return {"ok": True, "conversation_id": conversation_id, "message": answer, "files": [], "attachments": attachment_metadata, "status": None, "checks_ok": None, "test_results": []}
-        except RuntimeError:
-            if event.is_set():
-                return {"ok": False, "cancelled": True, "message": "Request cancelled.", "files": []}
-            raise
-
-    wrote_since_check = {"value": False}
-    had_check = {"value": False}
-    final_text = ""
-    finished = False
-    nudge_count = 0
-
-    for step in range(MAX_AGENT_STEPS):
-        if event.is_set():
-            return {"ok": False, "cancelled": True, "message": "Request cancelled. Any completed artifacts remain available; no completion claim was made.", "files": []}
-        if stream_callback:
-            stream_callback("status", "Building and checking project · step %s/%s" % (step + 1, MAX_AGENT_STEPS))
-        try:
-            model_kwargs = {"model_override": vision_model} if vision_model else {}
-            reply = ollama_request(messages, use_tools=True, event=event, **model_kwargs)
-        except RuntimeError as exc:
-            if _has_artifact_changes(conversation_id, baseline_files):
-                final_text = "The model call stopped before finishing. Any attached files are real artifacts, but full verification did not complete. Details: %s" % exc
-                break
-            raise
-        calls = reply.get("tool_calls") or []
-        content = reply.get("content", "")
-        if not isinstance(content, str): content = str(content)
-        if calls:
-            messages.append({"role": "assistant", "content": content, "tool_calls": calls})
-            for call in calls:
-                if event.is_set(): break
-                fn = call.get("function", {}) if isinstance(call, dict) else {}
-                name = fn.get("name")
-                args = fn.get("arguments", {})
-                if not isinstance(args, dict):
-                    try: args = json.loads(args)
-                    except Exception: args = {}
-                try:
-                    result = execute_tool(name, args, conversation_id, event, wrote_since_check, had_check, file_required, baseline_files)
-                except Exception as exc:
-                    result = {"ok": False, "error": str(exc)}
-                if stream_callback and result.get("ok") and name in {"create_artifact", "patch_artifact"}:
-                    stream_callback("status", "Saved " + str(result.get("filename", "file")))
-                if name == "finish_task" and result.get("ok"):
-                    final_text = result.get("summary") or content or "Done."
-                    finished = True
-                    break
-                messages.append({"role": "tool", "content": json.dumps(result, ensure_ascii=False), "tool_name": str(name or "tool")})
-            if finished: break
-            continue
-
-        if content.strip():
-            final_text = content.strip()
-        if file_required and not _has_artifact_changes(conversation_id, baseline_files):
-            recovered = recover_fenced_artifacts(content, message)
-            if recovered:
-                messages.append({"role": "assistant", "content": content})
-                for recovered_file in recovered:
-                    execute_tool("create_artifact", recovered_file, conversation_id, event, wrote_since_check, had_check, file_required, baseline_files)
-                messages.append({"role": "user", "content": "The backend attached the clearly labelled code blocks as real artifacts. Review the create results, call run_checks, fix issues, recheck after the last write, and call finish_task. Do not claim unverified runtime behavior."})
-                final_text = "I recovered the source into real file attachments. Checking them now."
-                continue
-            if nudge_count < 2:
-                nudge_count += 1
-                messages.append({"role": "assistant", "content": content})
-                messages.append({"role": "user", "content": "No real artifact was created. Call create_artifact with complete file contents and safe relative paths. Then run_checks and finish_task. Do not merely promise a file."})
-                continue
-            final_text = "I couldn't create a real file from that response, so I won't pretend it exists. Try a smaller first milestone or ask for fewer files."
-            break
-        if not file_required:
-            if content.strip(): final_text = content.strip()
-            break
-        if _visible_artifacts(conversation_id):
-            check_result = execute_tool("run_checks", {}, conversation_id, event, wrote_since_check, had_check, file_required, baseline_files)
-            if not check_result.get("ok"):
-                if nudge_count < 2:
-                    nudge_count += 1
-                    messages.append({"role": "assistant", "content": content})
-                    messages.append({"role": "user", "content": "Static checks found issues: " + json.dumps(check_result.get("failures", []), ensure_ascii=False)[:4500] + ". Repair the reported files, rerun checks, and only then finish_task."})
-                    continue
-                final_text = "Files were generated, but static checks reported unresolved issues. Review the files and findings before use. " + json.dumps(check_result.get("failures", []), ensure_ascii=False)[:1400]
-                break
-            if not final_text:
-                final_text = "Generated the files and passed the available static checks. Generated programs were not executed."
-            break
-        break
-
     if event.is_set():
-        return {"ok": False, "cancelled": True, "message": "Request cancelled. No completion was claimed.", "files": []}
-    changed_this_turn = _has_artifact_changes(conversation_id, baseline_files)
-    if file_required and changed_this_turn and not finished:
-        check_state = CHECK_STATE.get(conversation_id, {})
-        with LOCK:
-            latest_state = {name: aid for name, aid in CONVERSATION_FILES.get(conversation_id, {}).items() if aid in ARTIFACTS and not name.lower().endswith(".zip")}
-        verified_state = check_state.get("names", {})
-        latest_is_checked = all(verified_state.get(name) == aid for name, aid in latest_state.items())
-        if had_check["value"] and check_state.get("ok") and latest_is_checked:
-            final_text = "The files exist and passed available static checks, but the agent did not complete its final handoff step. Review the artifacts before using them."
-        elif had_check["value"]:
-            final_text = "Files were generated, but the latest static checks did not pass or did not cover the latest revision. Review the files and findings before use."
-        else:
-            final_text = "Files were generated, but the agent did not finish verification. The attachments are real, but the task is not verified as complete."
-    if not final_text:
-        final_text = "I reached the agent step limit before completing this request. Review any artifacts attached below and try a smaller follow-up."
-    if changed_this_turn:
-        make_project_zip(conversation_id)
-    with LOCK:
-        mapping = dict(CONVERSATION_FILES.get(conversation_id, {})) if changed_this_turn else {}
-        files_out = []
-        for filename, aid in mapping.items():
-            if baseline_files.get(filename) == aid:
-                continue
-            obj = ARTIFACTS.get(aid)
-            if not obj: continue
-            size = len(obj.get("bytes", b"")) if "bytes" in obj else len(obj["content"].encode("utf-8"))
-            item = {"id": aid, "filename": filename, "mime_type": obj["mime_type"], "size": size}
-            files_out.append(item)
-    checks_ok = bool(had_check["value"] and CHECK_STATE.get(conversation_id, {}).get("ok"))
-    status = ("Static checks passed. Generated programs were not executed." if checks_ok else "Static checks need attention. Generated programs were not executed.") if had_check["value"] else None
-    return {"ok": True, "conversation_id": conversation_id, "message": final_text, "files": files_out, "status": status, "checks_ok": checks_ok if had_check["value"] else None, "test_results": (["Static checks passed for the latest artifacts."] if checks_ok else (["Static checks reported issues; see the assistant's notes."] if had_check["value"] else []))}
-
-
-PROJECT_SKIP_DIRS = {".git", "node_modules", ".venv", "venv", "dist", "build", "coverage", "__pycache__", ".next", ".turbo", "vendor"}
-PROJECT_TEXT_EXTS = {".html", ".htm", ".css", ".scss", ".less", ".js", ".mjs", ".cjs", ".ts", ".tsx", ".jsx", ".json", ".md", ".txt", ".py", ".xml", ".svg", ".sql", ".yml", ".yaml", ".toml", ".ini", ".cfg", ".conf", ".sh", ".bat", ".ps1", ".java", ".go", ".rs", ".c", ".h", ".cpp", ".hpp", ".php", ".rb", ".vue", ".svelte", ".astro", ".gitignore", ".editorconfig"}
-PROJECT_SKIP_NAMES = {".env", ".env.local", ".env.production", "id_rsa", "id_ed25519", "credentials.json", "service-account.json"}
-
-
-def ingest_project_zip(conversation_id: str, archive_bytes: bytes) -> Dict[str, Any]:
-    """Import safe text project files into the in-memory artifact workspace; never extract paths to disk."""
-    if not archive_bytes or len(archive_bytes) > MAX_PROJECT_ZIP_BYTES:
-        raise ValueError("Project ZIP must be non-empty and no larger than 12 MB.")
+        return {"ok": False, "cancelled": True, "message": "Request cancelled.", "attachments": attachment_metadata}
+    if stream_callback:
+        stream_callback("status", "Analyzing image…" if images else "Thinking…")
     try:
-        archive = zipfile.ZipFile(io.BytesIO(archive_bytes), "r")
-    except (zipfile.BadZipFile, OSError) as exc:
-        raise ValueError("That file is not a valid ZIP archive.") from exc
-    imported: List[Dict[str, Any]] = []
-    skipped = 0
-    uncompressed_total = 0
-    try:
-        entries = archive.infolist()
-        if len(entries) > 1000:
-            raise ValueError("This ZIP contains too many entries. Keep the archive to 1,000 entries or fewer and exclude generated folders.")
-        for info in entries:
-            if info.is_dir():
-                continue
-            if len(imported) >= MAX_PROJECT_FILES:
-                skipped += 1
-                continue
-            try:
-                filename = safe_filename(info.filename)
-            except ValueError:
-                skipped += 1
-                continue
-            parts = filename.split("/")
-            lowered_parts = {part.lower() for part in parts}
-            base_name = parts[-1].lower()
-            ext = os.path.splitext(base_name)[1].lower()
-            if lowered_parts & PROJECT_SKIP_DIRS or base_name in PROJECT_SKIP_NAMES or base_name.startswith(".env.") and base_name != ".env.example":
-                skipped += 1
-                continue
-            if ext not in PROJECT_TEXT_EXTS or info.file_size > 400_000 or info.file_size < 0:
-                skipped += 1
-                continue
-            uncompressed_total += info.file_size
-            if uncompressed_total > MAX_PROJECT_UNPACKED_BYTES:
-                raise ValueError("The ZIP expands beyond the 12 MB import limit. Remove generated assets or dependencies and try again.")
-            try:
-                raw = archive.read(info)
-                if b"\x00" in raw:
-                    skipped += 1
-                    continue
-                content = raw.decode("utf-8-sig")
-            except (UnicodeDecodeError, RuntimeError, zipfile.BadZipFile):
-                skipped += 1
-                continue
-            if len(content) > MAX_ARTIFACT_CHARS:
-                skipped += 1
-                continue
-            with LOCK:
-                mapping = CONVERSATION_FILES[conversation_id]
-                if filename not in mapping and len(mapping) >= MAX_ARTIFACTS_PER_CONVERSATION - 1:
-                    skipped += 1
-                    continue
-                current_bytes = 0
-                for current_name, current_id in mapping.items():
-                    if current_name == filename or current_name.lower().endswith(".zip"):
-                        continue
-                    item = ARTIFACTS.get(current_id)
-                    if item:
-                        current_bytes += len(item.get("bytes", b"")) if "bytes" in item else len(item.get("content", "").encode("utf-8"))
-                if current_bytes + len(raw) > MAX_CONVERSATION_ARTIFACT_BYTES:
-                    skipped += 1
-                    continue
-                aid = secrets.token_urlsafe(18)
-                ARTIFACTS[aid] = {"id": aid, "conversation_id": conversation_id, "filename": filename, "content": content, "mime_type": mime_for(filename), "summary": "Imported project source", "created_at": time.time(), "imported": True}
-                mapping[filename] = aid
-            imported.append({"id": aid, "filename": filename, "mime_type": mime_for(filename), "size": len(raw)})
-    finally:
-        archive.close()
-    if not imported:
-        raise ValueError("No supported text source files were found. ZIP a project without node_modules, build output, or secrets and try again.")
-    zip_id = make_project_zip(conversation_id) if len(imported) > 1 else None
-    if zip_id:
-        with LOCK:
-            zipped = ARTIFACTS.get(zip_id)
-        if zipped:
-            imported.append({"id": zip_id, "filename": zipped["filename"], "mime_type": zipped["mime_type"], "size": len(zipped.get("bytes", b""))})
-    return {"ok": True, "conversation_id": conversation_id, "files": imported, "imported_count": len(imported) - (1 if zip_id else 0), "skipped_count": skipped, "message": "Loaded %s source files into the temporary project workspace%s." % (len(imported) - (1 if zip_id else 0), ("; skipped %s unsupported, large, generated, or sensitive files" % skipped) if skipped else "")}
-
-
+        reply = ollama_request(messages, use_tools=False, stream_callback=stream_callback, event=event, model_override=vision_model if vision_model else None)
+    except RuntimeError:
+        if event.is_set():
+            return {"ok": False, "cancelled": True, "message": "Request cancelled.", "attachments": attachment_metadata}
+        raise
+    if event.is_set():
+        return {"ok": False, "cancelled": True, "message": "Request cancelled.", "attachments": attachment_metadata}
+    answer = str(reply.get("content", "") or "").strip()
+    if not answer:
+        answer = "I was unable to produce a usable response. Try rephrasing the request or attaching a clearer image."
+    return {"ok": True, "conversation_id": conversation_id, "message": answer, "files": [], "attachments": attachment_metadata, "status": None, "checks_ok": None, "test_results": []}
 
 def _load_api_store() -> Dict[str, Any]:
     """Load API keys and synced profile data. Only hashes of key secrets are stored."""
