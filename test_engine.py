@@ -1,173 +1,203 @@
-"""Offline regression tests for INCANDESCENT AI / Photon 1. Never contacts Ollama."""
-import io
+"""Offline regression tests for INCANDESCENT chat and image analysis."""
+from __future__ import annotations
+
+import base64
+import importlib.util
 import json
 import threading
-import shutil
 import urllib.error
 import urllib.request
-import zipfile
 from http.server import ThreadingHTTPServer
 from pathlib import Path
-import importlib.util
 
-SERVER_FILE = Path(__file__).with_name("server.py")
-spec = importlib.util.spec_from_file_location("incandescent_test_server", SERVER_FILE)
+ROOT = Path(__file__).resolve().parent
+spec = importlib.util.spec_from_file_location("incandescent_test_server", ROOT / "server.py")
 mod = importlib.util.module_from_spec(spec)
-assert spec.loader is not None
+assert spec and spec.loader
 spec.loader.exec_module(mod)
 
 
-def check(condition, message):
+def check(condition: bool, message: str) -> None:
     if not condition:
         raise AssertionError(message)
 
-# Relative project paths are preserved, while traversal and absolute paths fail.
-check(mod.safe_filename("index.html") == "index.html", "basic filename")
-check(mod.safe_filename("src/components/App.jsx") == "src/components/App.jsx", "nested path preserved")
-for bad in ("../outside.py", "src/../../outside.py", "/absolute/path.py", "C:\\secret.txt", "src//empty.js"):
+
+def valid_png() -> bytes:
+    # Attachment handling validates the PNG signature; model output itself is mocked.
+    return b"\x89PNG\r\n\x1a\n" + b"\x00" * 24
+
+
+def main() -> None:
+    # Safe attachment filenames and bounded prior history.
+    check(mod.safe_filename("screen.png") == "screen.png", "ordinary image filename is accepted")
+    check(mod.safe_filename("src/app.py") == "src/app.py", "relative source paths remain readable")
+    for unsafe in ("../secret.txt", "/etc/passwd", "C:\\secret.txt", ""):
+        try:
+            mod.safe_filename(unsafe)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("unsafe attachment name accepted: " + repr(unsafe))
+
+    history = mod.normalize_history([
+        {"role": "system", "content": "not allowed"},
+        {"role": "user", "content": "  question  "},
+        {"role": "assistant", "content": "answer"},
+        {"role": "tool", "content": "not allowed"},
+    ])
+    check(history == [{"role": "user", "content": "question"}, {"role": "assistant", "content": "answer"}],
+          "history only keeps clean user and assistant messages")
+
+    png64 = base64.b64encode(valid_png()).decode("ascii")
+    image_attachments = [
+        {"filename": "screen.png", "kind": "image", "mime_type": "image/png", "data_base64": png64},
+        {"filename": "screen-edges.png", "kind": "image", "mime_type": "image/png", "data_base64": png64},
+        {"filename": "screen-colors.png", "kind": "image", "mime_type": "image/png", "data_base64": png64},
+    ]
+    text_context, images, metadata = mod.normalize_attachments([
+        {"filename": "snippet.py", "kind": "text", "mime_type": "text/plain", "content": "print('hello')"}
+    ], "test-source")
+    check("print('hello')" in text_context and not images, "source text is included directly in model context")
+    check(metadata[0]["filename"] == "snippet.py" and "artifact_id" not in metadata[0],
+          "source attachment context does not create an artifact")
+
     try:
-        mod.safe_filename(bad)
+        mod.normalize_attachments([
+            {"filename": "bad.png", "kind": "image", "mime_type": "image/png",
+             "data_base64": base64.b64encode(b"not a png").decode("ascii")}
+        ], "test-invalid-image")
     except ValueError:
         pass
     else:
-        raise AssertionError("unsafe path accepted: " + bad)
+        raise AssertionError("invalid image signature was accepted")
 
-# Distinguish chat snippets from true file/project work.
-check(not mod.truthy_file_task("Show me a Python function in chat that reverses a string"), "short example should remain chat")
-check(not mod.truthy_file_task("Explain what CSS specificity means"), "concept question should remain chat")
-check(mod.truthy_file_task("Build a complete responsive website"), "website should create files")
-check(mod.truthy_file_task("Create index.html and styles.css"), "explicit extensions should create files")
-check(mod.truthy_file_task("Build a multi-file application"), "multi-file project should create files")
-check(mod.truthy_file_task("Make me a VS Code extension"), "extension requests should create project files")
-check(mod.truthy_file_task("Build an online store"), "online store requests should create project files")
-check(mod.truthy_file_task("Build a calculator"), "common small projects should create runnable files")
-app_validation = mod.validate_artifact("index.html", (SERVER_FILE.parent / "index.html").read_text(encoding="utf-8"))
-check(app_validation["ok"], "Incandescent's own HTML passes its available static parser checks: " + repr(app_validation.get("issues")))
-check(mod.truthy_file_task("Create a React dashboard"), "dashboard projects should create files")
-check(not mod.truthy_file_task("Show me a JavaScript function in chat"), "explicit inline snippet stays in chat")
-check("default to HTML + CSS + JavaScript" in mod.SYSTEM_PROMPT, "project agent infers sensible default website stack")
+    # All model calls are mocked: tests do not download or launch a model.
+    old_request, old_models, old_model = mod.ollama_request, mod.ollama_models, mod.MODEL
+    captured = {}
 
-# The CPU supervisor watches a short-lived marker; it must always clear cleanly.
-marker = Path(mod.INFERENCE_MARKER_PATH)
-mod.set_inference_active(True)
-check(marker.is_file(), "inference activity marker is created")
-mod.set_inference_active(False)
-check(not marker.exists(), "inference activity marker is removed")
+    def fake_request(messages, use_tools=True, stream_callback=None, event=None, model_override=None):
+        captured["messages"] = messages
+        captured["use_tools"] = use_tools
+        captured["model_override"] = model_override
+        if stream_callback:
+            stream_callback("delta", "Image and text ")
+            stream_callback("delta", "analysis works.")
+        return {"role": "assistant", "content": "Image and text analysis works."}
 
-# Static validation tests.
-valid_html = '<!doctype html><html><head><title>Test</title></head><body><h1>Hello</h1></body></html>'
-check(mod.validate_artifact("index.html", valid_html)["ok"], "valid HTML should pass structural checks")
-check(not mod.validate_artifact("data.json", '{bad json}')["ok"], "bad JSON should fail")
-check(not mod.validate_artifact("main.py", 'def x(:\n pass')["ok"], "bad Python should fail")
-if shutil.which("node"):
-    check(mod.validate_artifact("good.js", "const answer = 42;\n")["ok"], "valid JavaScript should pass Node syntax parsing")
-    check(not mod.validate_artifact("bad.js", "const answer = ;\n")["ok"], "invalid JavaScript should fail Node syntax parsing")
-
-# ZIP import preserves paths, imports text, and skips secrets/dependencies/traversal.
-archive_buffer = io.BytesIO()
-with zipfile.ZipFile(archive_buffer, "w", zipfile.ZIP_DEFLATED) as archive:
-    archive.writestr("demo/index.html", valid_html)
-    archive.writestr("demo/src/app.js", "const answer = 42;\n")
-    archive.writestr("demo/.env", "API_KEY=not-for-import\n")
-    archive.writestr("demo/node_modules/x/index.js", "throw new Error('skip')")
-    archive.writestr("../escape.py", "print('bad')")
-conversation = "test-upload-conversation"
-result = mod.ingest_project_zip(conversation, archive_buffer.getvalue())
-check(result["ok"] is True and result["imported_count"] == 2, "ZIP imports supported project text files")
-project_zip_id = mod.CONVERSATION_FILES[conversation].get("incandescent-project.zip")
-check(project_zip_id in mod.ARTIFACTS, "multi-file projects receive a downloadable ZIP bundle")
-with zipfile.ZipFile(io.BytesIO(mod.ARTIFACTS[project_zip_id]["bytes"])) as project_zip:
-    check(set(project_zip.namelist()) == {"demo/index.html", "demo/src/app.js"}, "project ZIP preserves source paths and excludes skipped files")
-check("demo/index.html" in mod.CONVERSATION_FILES[conversation], "HTML path imported")
-check("demo/src/app.js" in mod.CONVERSATION_FILES[conversation], "nested source path imported")
-check("demo/.env" not in mod.CONVERSATION_FILES[conversation], "secret filename skipped")
-check("../escape.py" not in mod.CONVERSATION_FILES[conversation], "traversal filename skipped")
-check("demo/node_modules/x/index.js" not in mod.CONVERSATION_FILES[conversation], "dependencies skipped")
-search_result = mod.execute_tool("search_artifacts", {"query": "hello", "filename_filter": "index.html"}, conversation, threading.Event(), {"value": False}, {"value": False}, False)
-check(search_result["ok"] and search_result["match_count"] == 1, "literal search finds source line")
-check(search_result["matches"][0]["filename"] == "demo/index.html", "search returns relative path")
-
-# Exercise HTTP status, model list failure shape, streaming general chat, and downloads.
-old_request = mod.ollama_request
-old_ollama_models = mod.ollama_models
-old_model = mod.MODEL
-captured = {}
-def fake_request(messages, use_tools=True, stream_callback=None, event=None):
-    captured["use_tools"] = use_tools
-    if stream_callback:
-        stream_callback("delta", "Yo bro, ")
-        stream_callback("delta", "Photon is live.")
-    return {"role": "assistant", "content": "Yo bro, Photon is live."}
-mod.ollama_request = fake_request
-httpd = ThreadingHTTPServer(("127.0.0.1", 0), mod.Handler)
-thread = threading.Thread(target=httpd.serve_forever, daemon=True)
-thread.start()
-base = f"http://127.0.0.1:{httpd.server_address[1]}"
-try:
-    with urllib.request.urlopen(base + "/", timeout=5) as response:
-        check(response.status == 200, "homepage responds")
-        page = response.read().decode("utf-8")
-        check("INCANDESCENT" in page and 'id="sidebar"' in page and "Copy code" in page and "modelSelect" in page and "apiKeyDialog" in page, "updated frontend serves workspace, model selector, and API key manager")
-    payload = {"conversation_id": "test-stream-chat", "message": "yo bro what is 2+2", "history": []}
-    request = urllib.request.Request(base + "/api/chat/stream", data=json.dumps(payload).encode(), headers={"Content-Type": "application/json", "Accept": "application/x-ndjson"}, method="POST")
-    with urllib.request.urlopen(request, timeout=5) as response:
-        stream_body = response.read().decode("utf-8")
-    events = [json.loads(line) for line in stream_body.splitlines() if line.strip()]
-    deltas = "".join(item.get("content", "") for item in events if item.get("type") == "delta")
-    final = [item["data"] for item in events if item.get("type") == "final"][-1]
-    check(captured.get("use_tools") is False, "normal chat bypasses tool schemas")
-    check(deltas == "Yo bro, Photon is live.", "stream events carry partial text")
-    check(final["ok"] is True and final["message"] == deltas, "stream final agrees with emitted text")
-
-    # Model selection resolves an untagged Photon alias and only allows installed models.
-    mod.ollama_models = lambda: [{"name": "photon1:latest", "size": 100}, {"name": "qwen3.5:2b", "size": 200}]
-    model_req = urllib.request.Request(base + "/api/model", data=json.dumps({"model": "photon1"}).encode(), headers={"Content-Type": "application/json"}, method="POST")
-    with urllib.request.urlopen(model_req, timeout=5) as response:
-        selected = json.loads(response.read().decode())
-    check(selected["ok"] and selected["model"] == "photon1:latest" and selected["model_display"] == "Photon 1", "model selector resolves Photon alias")
-    model_bad_req = urllib.request.Request(base + "/api/model", data=json.dumps({"model": "not-installed"}).encode(), headers={"Content-Type": "application/json"}, method="POST")
     try:
-        urllib.request.urlopen(model_bad_req, timeout=5)
-    except urllib.error.HTTPError as exc:
-        check(exc.code == 404, "uninstalled model is rejected")
-    else:
-        raise AssertionError("uninstalled model unexpectedly accepted")
+        mod.ollama_request = fake_request
+        mod.MODEL = "photon1"
+        mod.ollama_models = lambda: [{"name": "qwen3.5:2b", "size": 100}]
+        check(mod.model_supports_vision("qwen3.5:2b"), "Qwen 3.5 is recognized as vision-capable")
+        check(mod.vision_model_for_request("photon1") == "qwen3.5:2b",
+              "image requests find an installed vision-capable fallback")
 
-    # Create a known artifact and verify real preview/download routes.
-    aid = mod.execute_tool("create_artifact", {"filename": "src/app.js", "content": "const answer = 42;\n"}, "http-download-test", threading.Event(), {"value": False}, {"value": False}, True)["id"]
-    with urllib.request.urlopen(base + "/api/files/" + aid + "/preview", timeout=5) as response:
-        check(response.read().decode() == "const answer = 42;\n", "artifact preview endpoint")
-    with urllib.request.urlopen(base + "/api/files/" + aid, timeout=5) as response:
-        check(response.headers.get("Content-Disposition", "").startswith("attachment;"), "download disposition")
-        check(response.read() == b"const answer = 42;\n", "artifact download bytes")
+        result = mod.process_chat(
+            {"message": "What is shown?", "attachments": image_attachments},
+            "test-image-chat", threading.Event()
+        )
+        check(result["ok"] and result["message"] == "Image and text analysis works.",
+              "image request produces a normal text answer")
+        check("files" not in result, "assistant response has no generated-file field")
+        check(captured["use_tools"] is False, "model tool calls are disabled")
+        check(captured["model_override"] == "qwen3.5:2b", "vision model is selected for image analysis")
+        user_turn = captured["messages"][-1]
+        check(user_turn.get("images") == [item["data_base64"] for item in image_attachments],
+              "original, edge and color images all reach the vision model")
+        check("edges map" in user_turn["content"] and "color-region map" in user_turn["content"],
+              "model prompt explains how derived image views should be interpreted")
+        check("screen-edges.png" in user_turn["content"] and "screen-colors.png" in user_turn["content"],
+              "layer filenames are available to model context")
 
-    # ZIP project upload route (raw body) returns imported source files.
-    upload_zip = io.BytesIO()
-    with zipfile.ZipFile(upload_zip, "w", zipfile.ZIP_DEFLATED) as archive:
-        archive.writestr("site/index.html", valid_html)
-    upload_req = urllib.request.Request(base + "/api/upload?conversation_id=http-upload-test", data=upload_zip.getvalue(), headers={"Content-Type": "application/zip"}, method="POST")
-    with urllib.request.urlopen(upload_req, timeout=5) as response:
-        upload_data = json.loads(response.read().decode())
-    check(upload_data["ok"] and upload_data["imported_count"] == 1, "HTTP project ZIP import endpoint")
-finally:
-    httpd.shutdown()
-    thread.join(timeout=3)
-    httpd.server_close()
-    mod.ollama_request = old_request
-    mod.ollama_models = old_ollama_models
-    mod.MODEL = old_model
-    mod.CONVERSATION_FILES.pop(conversation, None)
-    mod.CONVERSATION_FILES.pop("http-upload-test", None)
-    mod.CONVERSATION_FILES.pop("http-download-test", None)
-    for aid, artifact in list(mod.ARTIFACTS.items()):
-        if artifact.get("conversation_id") in {conversation, "http-upload-test", "http-download-test"}:
-            mod.ARTIFACTS.pop(aid, None)
+        text_result = mod.process_chat(
+            {"message": "Give me a Python example in chat.", "history": []},
+            "test-text-chat", threading.Event()
+        )
+        check(text_result["ok"] and "files" not in text_result,
+              "ordinary chat stays text-only and has no file-output field")
+        check(captured["use_tools"] is False, "text response does not enable tools")
 
-print("PASS: relative-path security and traversal rejection")
-print("PASS: chat-versus-file intent selection")
-print("PASS: HTML, JSON, and Python static validation")
-print("PASS: safe project ZIP import, filtering, and multi-file bundle export")
-print("PASS: HTTP homepage and token-streaming chat")
-print("PASS: artifact preview and download routes")
-print("PASS: installed-model selection and Photon alias handling")
-print("PASS: raw ZIP upload route")
+        cancelled = threading.Event()
+        cancelled.set()
+        cancelled_result = mod.process_chat({"message": "cancel this"}, "test-cancel", cancelled)
+        check(cancelled_result.get("cancelled") is True, "cancelled requests do not call the model")
+
+    finally:
+        mod.ollama_request, mod.ollama_models, mod.MODEL = old_request, old_models, old_model
+
+    # Exercise real HTTP routing with mocked model calls only.
+    old_request, old_models, old_model = mod.ollama_request, mod.ollama_models, mod.MODEL
+    streamed = {}
+
+    def http_fake_request(messages, use_tools=True, stream_callback=None, event=None, model_override=None):
+        streamed["tools"] = use_tools
+        if stream_callback:
+            stream_callback("delta", "Hello ")
+            stream_callback("delta", "from Incandescent.")
+        return {"role": "assistant", "content": "Hello from Incandescent."}
+
+    mod.ollama_request = http_fake_request
+    mod.ollama_models = lambda: [{"name": "photon1:latest", "size": 100}]
+    mod.MODEL = "photon1"
+    httpd = ThreadingHTTPServer(("127.0.0.1", 0), mod.Handler)
+    thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+    thread.start()
+    base = "http://127.0.0.1:%s" % httpd.server_address[1]
+    try:
+        with urllib.request.urlopen(base + "/", timeout=5) as response:
+            page = response.read().decode("utf-8")
+            check(response.status == 200 and "INCANDESCENT" in page, "homepage responds with the shipped app")
+            check('id="stopButton"' in page and 'data-copy-message=' in page, "current chat controls are served")
+        with urllib.request.urlopen(base + "/api/status", timeout=5) as response:
+            status = json.loads(response.read().decode("utf-8"))
+            check(status["ok"] and status["ollama_connected"], "neutral availability status endpoint works")
+
+        body = json.dumps({"conversation_id": "test-stream", "message": "say hello", "history": []}).encode("utf-8")
+        request = urllib.request.Request(
+            base + "/api/chat/stream", data=body,
+            headers={"Content-Type": "application/json", "Accept": "application/x-ndjson"}, method="POST"
+        )
+        with urllib.request.urlopen(request, timeout=5) as response:
+            frames = response.read().decode("utf-8")
+        events = [json.loads(line) for line in frames.splitlines() if line.strip()]
+        deltas = "".join(item.get("content", "") for item in events if item.get("type") == "delta")
+        final = [item["data"] for item in events if item.get("type") == "final"][-1]
+        check(deltas == "Hello from Incandescent.", "stream includes incremental response text")
+        check(final["ok"] and final["message"] == deltas, "stream final matches emitted text")
+        check("files" not in final and streamed["tools"] is False, "streaming remains text-only")
+
+        for route in ("/api/keys", "/api/files/unknown", "/api/upload"):
+            try:
+                urllib.request.urlopen(base + route, timeout=5)
+            except urllib.error.HTTPError as exc:
+                check(exc.code == 404, "removed file/API route returns 404: " + route)
+            else:
+                raise AssertionError("removed route unexpectedly exists: " + route)
+
+        unknown_body = json.dumps({"messages": [{"role": "user", "content": "Hi"}]}).encode("utf-8")
+        old_api_req = urllib.request.Request(
+            base + "/v1/chat/completions", data=unknown_body,
+            headers={"Content-Type": "application/json"}, method="POST"
+        )
+        try:
+            urllib.request.urlopen(old_api_req, timeout=5)
+        except urllib.error.HTTPError as exc:
+            check(exc.code == 404, "OpenAI-compatible API route is removed")
+        else:
+            raise AssertionError("removed OpenAI-compatible API route unexpectedly exists")
+
+    finally:
+        httpd.shutdown()
+        thread.join(timeout=3)
+        httpd.server_close()
+        mod.ollama_request, mod.ollama_models, mod.MODEL = old_request, old_models, old_model
+
+    check(not Path(mod.INFERENCE_MARKER_PATH).exists(), "inference marker is cleaned up")
+    print("PASS: safe attachment validation and bounded chat history")
+    print("PASS: image original, edge layer and color layer reach the vision model")
+    print("PASS: text-only generation with disabled model tools and no file outputs")
+    print("PASS: streaming HTTP chat, status endpoint, and removed API/file routes")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,49 +1,37 @@
-# Incandescent — Professional software checklist
+# INCANDESCENT — Quality and release roadmap
 
-## Implemented in this build
-- Product identity: Incandescent is the app; Photon 1 is the coding model.
-- Create/edit/delete custom AI profiles with purpose, audience, style, personality, background, and custom instructions.
-- Persist profiles in IndexedDB with localStorage fallback.
-- Start a separate conversation bound to a selected profile; save the profile reference with conversation history.
-- Send the selected profile to the backend on normal and queued turns, where it is converted to bounded system context.
-- Warm milk / toasted-cookie / cinnamon visual surfaces for the builder and sidebar.
-- Validation and length caps on custom instructions; API keys are intentionally not exposed or generated yet.
+## Implemented in the current working branch
+- Reduced Create your AI to a compact rounded rectangle.
+- Removed the duplicate top-right New Chat control; the sidebar keeps one New Chat button under Create AI.
+- Made the hamburger control fully hide and reopen the desktop sidebar.
+- Kept the send arrow stable and added a separate stop-response button.
+- Added one-click copying for complete assistant responses and code blocks.
+- Added browser-side image preprocessing: original image, Sobel edge map, and simplified color-region view.
+- Routed image requests to an installed vision-capable model and explained the supporting layers in the model context.
+- Changed generation to text-only responses in the chat.
+- Removed API-key creation, API-key storage, external chat-completions routes, generated-file downloads, ZIP import, and the old artifact writer.
+- Replaced regression tests that depended on file creation and API keys with tests for chat, image analysis, and the current UI.
 
-## Professional hardening still required before public launch
-1. Add a real authenticated backend, user accounts, and server-side profile ownership. Browser storage alone is per-browser and is not a cloud sync system.
-2. Implement API key creation, hashing at rest, revocation, scope/usage limits, rate limiting, and audit logs before exposing an API.
-3. Add automated end-to-end browser tests on supported desktop/mobile browsers.
-4. Add model quality evaluation against held-out realistic tasks and verify image analysis with a compatible vision model.
-5. Add voice output and optional streaming speech playback with explicit user controls.
-6. Add data export/import and retention controls; document storage and privacy behavior.
-7. Run a dependency/security review and validate every release on a clean Windows install.
-8. Benchmark concurrency, cancellation, memory usage, request timeouts, and model failure recovery on target hardware.
-9. Add account-bound profile permissions, secure secret handling, and deployment-specific HTTPS configuration before multi-user hosting.
-10. Establish release versioning, migration tests, crash reporting that avoids collecting private prompts, and a reproducible build checklist.
+## Validation required before release
+1. Run the GitHub Actions regression workflow and fix every failure before merging.
+2. Run py_compile and the same regression suite on the target Windows version.
+3. Test actual inference with the configured text model, including long code answers, errors, empty answers, and output limits.
+4. Test image analysis on real images with the intended vision model. Compare original-image interpretation against the edge and color views; do not treat those views as independent object recognition.
+5. Manually test the sidebar at desktop and mobile widths, including keyboard access and reopening after collapse.
+6. Test stop-response during generation, while queued follow-ups exist, and while switching chats.
+7. Test clipboard fallback in browsers where Clipboard API access is unavailable, including copying fenced code and a full answer.
+8. Check attachment-size limits, unsupported file types, corrupt images, repeated attachments, and large images on the target hardware.
+9. Review keyboard focus, accessible labels, dialog behavior, reduced-motion settings, contrast, and narrow-screen layout.
+10. Measure memory use and response latency on the target PC; fix visible freezes and long unresponsive periods.
+11. Complete a security/privacy review of browser storage, attachment processing, host checks, and error messages.
+12. Update the release notes only with checks that have actually passed.
 
-## Not included by design in this build
-- No API keys or public hosted API yet.
-- Creating a custom AI stores configuration and injects its behavior into model context; it does not change model weights or constitute fine-tuning.
-- Profiles are stored on the current browser installation; cross-device sharing requires a user/account backend.
+## Deferred for later
+- Installer and distribution packaging.
+- Accounts, multi-device profile sync, and cloud storage.
+- Public or third-party API access.
+- Model training or fine-tuning.
+- Voice output.
 
-
-## Updated local business AI and API access
-- Updated light, neutral workspace styling with restrained controls and simpler visual hierarchy; the readiness indicator is hidden from the top bar.
-- Expanded assistant profiles with business identity, contact, website, location, hours, refund/return policies, shipping, payment methods, other policies, custom info, and a repeatable product catalog.
-- Assistant system context explicitly prevents invented policy/product facts, enforces the configured name, and permits general questions outside the business domain.
-- Image requests can automatically route to an installed vision-capable Ollama model (including local Qwen3.5 2B if present) while keeping the configured text model as the default.
-- Added local API key creation, SHA-256 hash-only storage, listing/revocation, and an authenticated OpenAI-compatible chat-completions endpoint with no app-level request quota.
-- API credentials and synced API profiles are stored in a runtime-generated incandescent_api_data.json; do not commit that generated file.
-- Launcher opens the local URL in a normal Chrome window instead of app mode.
-- Full runtime verification still needs to be done on the target Windows PC, including model/image routing, API key revocation, and external integration under the chosen hosting strategy.
-
-
-## Updated local business AI and API access
-- Updated light, neutral workspace styling with restrained controls and simpler visual hierarchy; the readiness indicator is hidden from the top bar.
-- Expanded assistant profiles with business identity, contact, website, location, hours, refund/return policies, shipping, payment methods, other policies, custom info, and a repeatable product catalog.
-- Assistant system context explicitly prevents invented policy/product facts, enforces the configured name, and permits general questions outside the business domain.
-- Image requests can automatically route to an installed vision-capable Ollama model (including local Qwen3.5 2B if present) while keeping the configured text model as the default.
-- Added local API key creation, SHA-256 hash-only storage, listing/revocation, and an authenticated OpenAI-compatible chat-completions endpoint with no application-level request quota.
-- API credentials and synced API profiles are stored in a runtime-generated incandescent_api_data.json; do not commit that generated file.
-- Launcher opens the local URL in a normal Chrome window instead of app mode.
-- Full runtime verification still needs to be done on the target Windows PC, including model/image routing, API key revocation, and external integration under the chosen hosting strategy.
+## Release rule
+Do not label the project production-ready until automated checks, real-model image and text tests, and a manual Windows UI pass have all been completed. The current changes make progress toward that bar; they do not prove every possible bug has been eliminated.

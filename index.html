@@ -975,26 +975,26 @@
     .catalog-add-button { margin-top:10px; }
     .catalog-add-button:hover,.catalog-remove-button:hover { background:#f3f3f4; }
     .catalog-remove-button { align-self:flex-start; }
-    .api-key-dialog { width:min(640px,calc(100vw - 28px)); }
-    .api-key-form { width:100%; }
-    .api-endpoint-panel { padding:13px; border:1px solid #e4e4e7; border-radius:10px; background:#fafafa; }
-    .api-endpoint-panel p,.api-key-reveal p { margin:8px 0 0; color:#656870; font-size:12px; line-height:1.5; }
-    .api-create-row,.api-secret-row,.api-key-row,.api-existing-heading { display:flex; align-items:center; justify-content:space-between; gap:10px; }
-    .api-create-row { margin:14px 0; }
-    #apiKeyStatus { color:#656870; font-size:12px; line-height:1.4; }
-    .api-key-reveal { margin:14px 0; padding:12px; border:1px solid #d9d9df; border-radius:10px; background:#f7f7f8; }
-    .api-secret-row .ai-input { flex:1; min-width:0; }
-    .api-existing-heading { margin:18px 0 8px; }
-    .api-existing-heading span,.api-key-meta span { color:#74767d; font-size:11px; }
-    .api-key-list { display:grid; gap:8px; max-height:230px; overflow:auto; }
-    .api-key-row { padding:10px; border:1px solid #e5e5e8; border-radius:9px; }
-    .api-key-meta { min-width:0; display:grid; gap:4px; }
-    .api-key-meta strong { color:#27282c; font-size:12px; }
-    .api-key-meta code { color:#6a6c72; font-size:10px; overflow-wrap:anywhere; }
-    .api-empty { margin:0; padding:13px; color:#777a80; font-size:12px; }
-    @media (max-width:760px) { .engine-meta {display:none!important}.topbar{padding:12px 14px}.page-nav{padding:0 14px}main{padding:22px 13px 16px!important}.starter-grid{grid-template-columns:1fr}.starter:last-child{grid-column:auto}.ai-catalog-row{flex-direction:column}.ai-catalog-fields{grid-template-columns:1fr;width:100%}.catalog-remove-button{align-self:flex-end}.api-create-row{align-items:flex-start;flex-direction:column}.api-key-row{align-items:flex-start}.api-secret-row{align-items:stretch} }
+    @media (max-width:760px) { .engine-meta {display:none!important}.topbar{padding:12px 14px}main{padding:22px 13px 16px!important}.starter-grid{grid-template-columns:1fr}.starter:last-child{grid-column:auto}.ai-catalog-row{flex-direction:column}.ai-catalog-fields{grid-template-columns:1fr;width:100%}.catalog-remove-button{align-self:flex-end} }
     @media (prefers-reduced-motion:reduce) { *,*::before,*::after {animation-duration:.01ms!important;transition-duration:.01ms!important} }
 
+    /* Final workspace interaction rules */
+    .sidebar-toggle { display:grid !important; }
+    .sidebar-collapsed .sidebar { display:none !important; width:0 !important; min-width:0 !important; flex:0 0 0 !important; padding:0 !important; border:0 !important; overflow:hidden !important; }
+    .sidebar-collapsed #mainContent { width:100% !important; max-width:none !important; flex:1 1 auto !important; }
+    .create-ai-trigger { width:max-content !important; min-width:0 !important; min-height:30px !important; height:30px !important; align-self:flex-start !important; padding:0 11px !important; margin:2px 0 5px !important; border-radius:8px !important; font-size:11px !important; font-weight:650 !important; box-shadow:none !important; }
+    #sidebarNewChat { width:100%; min-height:36px; flex:0 0 auto; justify-content:flex-start; }
+    .stop-generation { display:none; width:36px; height:36px; flex:0 0 36px; place-items:center; border:1px solid #d7d9df; border-radius:9px; background:#fff; color:#25272d; cursor:pointer; }
+    .stop-generation.visible { display:grid; }
+    .stop-generation:disabled { opacity:.4; cursor:default; }
+    .stop-generation:hover:not(:disabled) { background:#f1f2f4; border-color:#b7bbc4; }
+    .stop-generation svg { display:block; width:16px; height:16px; }
+    .composer-actions { align-items:center; }
+    .message-actions { display:flex; gap:8px; margin-top:8px; }
+    .copy-response { display:inline-flex; align-items:center; gap:6px; min-height:27px; padding:4px 8px; border:1px solid #e0e2e7; border-radius:7px; background:#fff; color:#646a75; font-size:11px; cursor:pointer; }
+    .copy-response:hover { background:#f6f6f7; color:#202123; border-color:#c6c9d0; }
+    .copy-response svg { width:13px; height:13px; }
+    @media (max-width:760px) { .sidebar-toggle {display:grid!important} .copy-response {min-height:30px} }
   </style>
 </head>
 <body>
@@ -1002,14 +1002,13 @@
     <header class="topbar">
       <div class="brand" aria-label="INCANDESCENT home">
         <div class="mark" aria-hidden="true"><img src="/incandescent.ico?v=6" alt=""></div>
-        <div class="brand-copy"><div class="wordmark">INCANDESCENT</div><div class="tagline">Your local AI workspace</div></div>
+        <div class="brand-copy"><div class="wordmark">INCANDESCENT</div></div>
       </div>
       <div class="engine-meta" aria-live="polite">
-        <div class="status"><span id="statusDot" class="status-dot checking"></span><span id="statusText">Getting Incandescent ready…</span></div>
+        <div class="status"><span id="statusDot" class="status-dot checking"></span><span id="statusText">Checking availability…</span></div>
       </div>
       <div class="actions">
-        <button class="icon-btn sidebar-toggle" id="sidebarToggle" type="button" aria-label="Open chat history" title="Open chat history"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 6.5h16M4 12h16M4 17.5h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
-        <button class="new-btn" id="newConversation" type="button"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg><span>New chat</span></button>
+        <button class="icon-btn sidebar-toggle" id="sidebarToggle" type="button" aria-label="Toggle sidebar" title="Toggle sidebar"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 6.5h16M4 12h16M4 17.5h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
         <button class="icon-btn" id="settingsButton" type="button" aria-label="Open settings" title="Settings" aria-expanded="false"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 7h9m4 0h3M4 17h3m4 0h9M13 4v6M9 14v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
       </div>
       <section class="settings" id="settingsPanel" aria-label="Interface settings">
@@ -1017,20 +1016,13 @@
         <div class="setting-row"><span>Compact layout</span><button class="toggle" id="compactToggle" type="button" aria-pressed="false"><i></i></button></div>
         <div class="setting-row"><span>Enter sends message</span><button class="toggle active" id="enterToggle" type="button" aria-pressed="true"><i></i></button></div>
         <div class="setting-row"><span>Refresh interval</span><select id="refreshSelect" aria-label="Refresh interval"><option value="60000">1 minute</option><option value="120000">2 minutes</option><option value="0">Manual only</option></select></div>
-        <div class="setting-row model-picker-row"><label for="modelSelect">AI model</label><select id="modelSelect" aria-label="Choose AI model"><option value="">Loading installed models…</option></select></div><p class="model-picker-status" id="modelPickerStatus" role="status">Checking installed models…</p>
+        <div class="setting-row model-picker-row"><label for="modelSelect">AI model</label><select id="modelSelect" aria-label="Choose AI model"><option value="">Loading model choices…</option></select></div><p class="model-picker-status" id="modelPickerStatus" role="status">Loading model choices…</p>
       </section>
     </header>
-    <nav class="page-nav" aria-label="Application pages">
-      <button class="page-tab active" type="button" data-page="workspace">Workspace</button>
-      <button class="page-tab" type="button" data-page="artifacts">Artifacts</button>
-    </nav>
     <div class="app-layout">
     <aside class="sidebar" id="sidebar" aria-label="Conversation sidebar">
-      <div class="sidebar-top">
-        <button class="sidebar-new" id="sidebarNewChat" type="button"><span aria-hidden="true">＋</span> New chat</button>
-        <button class="sidebar-collapse" id="sidebarCollapse" type="button" aria-label="Collapse sidebar" title="Collapse sidebar">‹</button>
-      </div>
       <button class="sidebar-new create-ai-trigger" id="createAiButton" type="button"><span aria-hidden="true">＋</span> Create your AI</button>
+      <button class="sidebar-new" id="sidebarNewChat" type="button"><span aria-hidden="true">＋</span> New chat</button>
       <label class="sidebar-search-label" for="chatSearch">Your conversations</label>
       <input class="sidebar-search" id="chatSearch" type="search" placeholder="Search chats" autocomplete="off">
       <div class="chat-history" id="chatHistory" aria-live="polite"><div class="history-empty">Your chats will appear here.</div></div>
@@ -1048,13 +1040,13 @@
         <div id="welcome" class="welcome">
           <div class="eyebrow">Your coding partner</div>
           <h1>What will you build?</h1>
-          <p>Describe a software project, debug a codebase, or ask for an implementation plan. INCANDESCENT will return its response and any verified generated files here.</p>
+          <p>Ask questions, explore ideas, analyze images, or work through code. Your answers stay in the conversation, ready to copy.</p>
           <div class="starter-grid" aria-label="Example tasks">
-            <button class="starter" type="button" data-prompt="Build a polished responsive website for a small business. Use HTML, CSS, and JavaScript, include working interactions, and provide all files in a ZIP."><b>Build a website</b><span>Responsive UI with working interactions</span></button>
-            <button class="starter" type="button" data-prompt="Create a small Python desktop utility with a clean interface, sensible error handling, and a README with setup steps."><b>Create a Python app</b><span>A complete small desktop utility</span></button>
-            <button class="starter" type="button" data-prompt="Inspect the uploaded project, map its main files, identify the biggest bugs, and fix the highest-impact issues without breaking existing behavior."><b>Fix my project</b><span>Inspect, repair, then verify</span></button>
-            <button class="starter" type="button" data-prompt="Build a small REST API with input validation, clear errors, and a README showing how to run and test it locally."><b>Build an API</b><span>Endpoints, validation, and docs</span></button>
-            <button class="starter" type="button" data-prompt="Review the uploaded project structure, summarize how its main parts fit together, and suggest the next three improvements. Do not edit files yet."><b>Understand a codebase</b><span>Map files before making changes</span></button>
+            <button class="starter" type="button" data-prompt="Show me a polished responsive small-business website directly in chat using complete HTML, CSS, and JavaScript code blocks. Include working interactions and explain how to use the code."><b>Build a website</b><span>Responsive UI with working interactions</span></button>
+            <button class="starter" type="button" data-prompt="Write a complete, readable Python desktop utility example directly in chat, with a clean interface and sensible error handling."><b>Create a Python app</b><span>A complete small desktop utility</span></button>
+            <button class="starter" type="button" data-prompt="Inspect the uploaded source, map its main components, identify the biggest bugs, and explain precise fixes without changing or creating files."><b>Fix my project</b><span>Inspect, repair, then verify</span></button>
+            <button class="starter" type="button" data-prompt="Show a small REST API implementation in chat with input validation, clear errors, and code blocks for the required source."><b>Build an API</b><span>Endpoints, validation, and docs</span></button>
+            <button class="starter" type="button" data-prompt="Review the uploaded source structure, summarize how its parts fit together, and suggest the next three improvements. Keep the response in chat."><b>Understand a codebase</b><span>Map files before making changes</span></button>
           </div>
         </div>
         <div id="messages" class="messages" hidden></div>
@@ -1062,19 +1054,15 @@
       <div class="composer-wrap">
         <form class="composer" id="composer">
           <label class="sr-only" for="messageInput">Describe what you want to build</label>
-          <textarea id="messageInput" rows="3" placeholder="Describe a software project or engineering task…"></textarea>
+          <textarea id="messageInput" rows="3" placeholder="Ask a question, analyze an image, or write code…"></textarea>
           <div class="pending-attachments" id="pendingAttachments" aria-live="polite" hidden></div>
           <div class="composer-footer">
-            <span class="hint" id="composerHint">Drop files here · Enter to send · Shift+Enter for a new line</span>
-            <input id="attachmentInput" type="file" multiple accept=".txt,.zip,.html,.htm,.css,.scss,.js,.mjs,.cjs,.ts,.tsx,.jsx,.json,.md,.py,.xml,.svg,.yml,.yaml,.toml,.ini,.cfg,.conf,.sh,.bat,.ps1,.sql,.java,.go,.rs,.c,.h,.cpp,.hpp,.php,.rb,.vue,.svelte,.astro,.gitignore,.editorconfig,.png,.jpg,.jpeg,.webp" hidden>
-            <div class="composer-actions"><button class="utility-btn attach-btn" id="uploadButton" type="button" title="Attach text, source code, an image, or a ZIP project"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="m8.5 12.5 6.2-6.2a3.2 3.2 0 0 1 4.5 4.5l-8.5 8.5a5 5 0 0 1-7.1-7.1l8.5-8.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Attach files</span></button><button class="utility-btn mic-btn" id="micButton" type="button" aria-label="Start speech to text" title="Speech to text"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3m-4 0h8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button><button class="send" id="sendButton" type="submit" aria-label="Send message" title="Send message"><svg class="send-arrow" viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><path d="M12 19V5M6.5 10.5 12 5l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><svg class="send-stop" viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" hidden><rect x="6.5" y="6.5" width="11" height="11" rx="1.5" fill="currentColor"/></svg></button></div>
+            <span class="hint" id="composerHint">Drop an image or source files · Enter to send · Shift+Enter for a new line</span>
+            <input id="attachmentInput" type="file" multiple accept=".txt,.html,.htm,.css,.scss,.js,.mjs,.cjs,.ts,.tsx,.jsx,.json,.md,.py,.xml,.svg,.yml,.yaml,.toml,.ini,.cfg,.conf,.sh,.bat,.ps1,.sql,.java,.go,.rs,.c,.h,.cpp,.hpp,.php,.rb,.vue,.svelte,.astro,.gitignore,.editorconfig,.png,.jpg,.jpeg,.webp" hidden>
+            <div class="composer-actions"><button class="utility-btn attach-btn" id="uploadButton" type="button" title="Attach an image, text, or source code"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="m8.5 12.5 6.2-6.2a3.2 3.2 0 0 1 4.5 4.5l-8.5 8.5a5 5 0 0 1-7.1-7.1l8.5-8.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Attach</span></button><button class="utility-btn mic-btn" id="micButton" type="button" aria-label="Start speech to text" title="Speech to text"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3m-4 0h8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button><button class="stop-generation" id="stopButton" type="button" aria-label="Stop response" title="Stop response" aria-hidden="true" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/></svg></button><button class="send" id="sendButton" type="submit" aria-label="Send message" title="Send message"><svg class="send-arrow" viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><path d="M12 19V5M6.5 10.5 12 5l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
           </div>
         </form>
       </div>
-      </section>
-      <section class="page" id="page-artifacts" data-page-view="artifacts">
-        <div class="page-heading"><div class="eyebrow">Verified project output</div><h2>Artifacts</h2><p>Files created for your projects appear here, ready to preview or download.</p></div>
-        <div id="artifactLibrary" class="artifact-library"><div class="empty-page">No verified artifacts yet.<br>Generated files will be collected here after a completed request.</div></div>
       </section>
     </main>
     </div>
@@ -1119,18 +1107,7 @@
       <div class="ai-builder-footer"><span id="aiBuilderStatus" role="status"></span><button class="dialog-secondary" id="aiBuilderCancel" type="button">Cancel</button><button class="dialog-secondary" id="aiBuilderSave" type="button">Save AI</button><button class="dialog-primary" id="aiBuilderSaveTest" type="button">Save &amp; test</button></div>
     </form>
   </dialog>
-  <dialog id="apiKeyDialog" class="personalization-dialog api-key-dialog" aria-labelledby="apiKeyTitle">
-    <form method="dialog" class="api-key-form" id="apiKeyForm">
-      <div class="dialog-head"><div><div class="eyebrow">Developer access</div><h2 id="apiKeyTitle">API access</h2></div><button class="dialog-close" id="apiKeyClose" type="button" aria-label="Close API access">×</button></div>
-      <p class="dialog-description">Create a persistent key for this AI. Keys have no app-imposed request quota. Keep them private and use them from a backend, not public website JavaScript.</p>
-      <div class="api-endpoint-panel"><label class="field-label" for="apiEndpoint">Chat completions endpoint</label><input class="ai-input" id="apiEndpoint" readonly value="/v1/chat/completions"><p>Your PC must be running Incandescent and reachable from the calling application. This does not create public hosting by itself.</p></div>
-      <div class="api-create-row"><button class="dialog-primary" id="generateApiKey" type="button">Generate API key</button><span id="apiKeyStatus" role="status"></span></div>
-      <div class="api-key-reveal" id="apiKeyReveal" hidden><label class="field-label" for="apiKeyValue">New key — copy it now</label><div class="api-secret-row"><input class="ai-input" id="apiKeyValue" readonly autocomplete="off" spellcheck="false"><button class="dialog-secondary" id="copyApiKey" type="button">Copy</button></div><p>This secret is shown only once. Incandescent stores a SHA-256 hash, not the raw key.</p></div>
-      <div class="api-existing-heading"><h3>Active keys</h3><span>Revoke any key at any time.</span></div>
-      <div id="apiKeyList" class="api-key-list"><p class="api-empty">Loading keys…</p></div>
-      <div class="dialog-footer"><span id="apiKeyFooterNote" role="status"></span><button class="dialog-secondary" id="apiKeyDone" type="button">Done</button></div>
-    </form>
-  </dialog>
+
   <script>
 (() => {
   'use strict';
@@ -1141,17 +1118,14 @@
     uploadedFiles: [],
     pendingAttachments: [],
     queuedMessages: [],
-    queuedZipUploads: [],
     chatHistory: [],
     customAIs: [],
     conversationAiProfileId: null,
     editingAiProfileId: null,
-    apiProfileId: null,
     requests: new Map(),
     personalization: '',
     personalizationEnabled: true,
     sending: false,
-    uploading: false,
     controller: null,
     enterSends: true,
     refreshTimer: null,
@@ -1174,7 +1148,7 @@
   const chatHistoryEl = $('chatHistory');
   const pendingAttachmentEl = $('pendingAttachments');
   const sendArrow = sendButton.querySelector('.send-arrow');
-  const sendStop = sendButton.querySelector('.send-stop');
+  const stopButton = $('stopButton');
 
   const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
   const formatSize = (size) => {
@@ -1328,8 +1302,8 @@
 
   function progressMarkup() {
     const request = activeRequest();
-    if (!request && !state.uploading) return '';
-    const message = state.uploading ? 'Loading project…' : (request.progress || 'Working…');
+    if (!request) return '';
+    const message = request.progress || 'Working…';
     return '<div class="progress" id="progressMessage" role="status"><span class="spinner"></span><span id="progressText">' + escapeHtml(message) + '</span></div>';
   }
 
@@ -1338,21 +1312,27 @@
     messagesEl.hidden = state.messages.length === 0;
     messagesEl.innerHTML = state.messages.map((item, index) => renderMessage(item, index)).join('');
     messagesEl.insertAdjacentHTML('beforeend', progressMarkup());
-    messagesEl.querySelectorAll('[data-action]').forEach(button => button.addEventListener('click', () => {
-      handleFileAction(button.dataset.action, Number(button.dataset.index), Number(button.dataset.file));
-    }));
-    messagesEl.querySelectorAll('[data-close-preview]').forEach(button => button.addEventListener('click', () => {
-      const panel = button.closest('.preview-panel');
-      if (panel) panel.classList.remove('open');
+    messagesEl.querySelectorAll('[data-copy-message]').forEach(button => button.addEventListener('click', async () => {
+      const item = state.messages[Number(button.dataset.copyMessage)];
+      if (!item || item.role !== 'assistant') return;
+      try {
+        await copyText(item.content || '');
+        const label = button.querySelector('span');
+        if (label) label.textContent = 'Copied';
+        button.setAttribute('aria-label', 'Response copied');
+        window.setTimeout(() => {
+          if (!button.isConnected) return;
+          if (label) label.textContent = 'Copy';
+          button.setAttribute('aria-label', 'Copy response');
+        }, 1300);
+      } catch (error) { showToast(friendlyError(error)); }
     }));
     bindCodeButtons(messagesEl);
     updateSendButton();
-    uploadButton.disabled = state.uploading;
     renderPendingAttachments();
     renderChatHistory();
     renderAiProfiles();
     renderActiveAiBanner();
-    renderArtifacts();
     scrollToBottom(false);
   }
 
@@ -1361,17 +1341,11 @@
       return '<div class="notice ' + (item.success ? 'success' : '') + '">' + escapeHtml(item.content || item.text || '') + '</div>';
     }
     const isUser = item.role === 'user';
-    const files = Array.isArray(item.files) ? item.files : [];
     const activeProfile = getAiProfile(state.conversationAiProfileId);
     const label = isUser ? 'You' : (activeProfile ? activeProfile.name : 'Incandescent');
     const attached = Array.isArray(item.attachments) && item.attachments.length ? '<div class="message-attachments">' + item.attachments.map(file => '<span class="pending-chip">' + escapeHtml(file.filename) + '</span>').join('') + '</div>' : '';
-    return '<article class="message ' + (isUser ? 'user' : 'assistant') + '" data-message-index="' + index + '"><div class="avatar" aria-hidden="true">' + (isUser ? 'YOU' : '<img src="/incandescent.ico?v=6" alt="" loading="lazy">') + '</div><div class="message-body"><div class="message-label">' + label + '</div><div class="message-content">' + renderMarkdown(item.content) + '</div>' + attached + (files.length ? '<div class="files">' + files.map((file, fileIndex) => renderFile(file, index, fileIndex)).join('') + '</div>' : '') + '</div></article>';
-  }
-
-  function renderFile(file, index, fileIndex) {
-    const label = [file.mime_type || fileType(file.filename, ''), formatSize(file.size)].filter(Boolean).join(' · ');
-    const canPreview = isTextFile(file);
-    return '<div class="file-card"><div class="file-icon">' + escapeHtml(fileType(file.filename, file.mime_type)) + '</div><div class="file-info"><div class="file-name">' + escapeHtml(file.filename || 'Unnamed file') + '</div><div class="file-meta">' + escapeHtml(label || 'Project artifact') + '</div></div><div class="file-actions">' + (canPreview ? '<button type="button" data-action="preview" data-index="' + index + '" data-file="' + fileIndex + '">Preview</button>' : '') + (canPreview ? '<button type="button" data-action="copy" data-index="' + index + '" data-file="' + fileIndex + '">Copy</button>' : '') + '<button type="button" data-action="download" data-index="' + index + '" data-file="' + fileIndex + '">Download</button></div></div><div class="preview-panel" data-preview="' + index + '-' + fileIndex + '"><div class="preview-head"><span>Preview · ' + escapeHtml(file.filename || 'file') + '</span><button type="button" data-close-preview aria-label="Close preview">Close</button></div><pre class="preview-code">Loading preview…</pre><iframe class="html-preview" title="Isolated HTML artifact preview" sandbox="allow-scripts" hidden></iframe></div>';
+    const copyAction = isUser ? '' : '<div class="message-actions"><button class="copy-response" type="button" data-copy-message="' + index + '" title="Copy response" aria-label="Copy response"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span>Copy</span></button></div>';
+    return '<article class="message ' + (isUser ? 'user' : 'assistant') + '" data-message-index="' + index + '"><div class="avatar" aria-hidden="true">' + (isUser ? 'YOU' : '<img src="/incandescent.ico?v=6" alt="" loading="lazy">') + '</div><div class="message-body"><div class="message-label">' + escapeHtml(label) + '</div><div class="message-content">' + renderMarkdown(item.content) + '</div>' + copyAction + attached + '</div></article>';
   }
 
   function addMessage(role, content, extra) {
@@ -1442,20 +1416,16 @@
     const hasDraft = Boolean(input.value.trim()) || state.pendingAttachments.length > 0;
     const request = activeRequest();
     const sending = !!request;
-    // Like ChatGPT: square = stop only when generating with no draft; an entered draft
-    // switches back to the arrow and queues a follow-up for this conversation.
-    const mode = sending && !hasDraft ? 'stop' : 'send';
-    sendButton.dataset.mode = mode;
+    sendButton.dataset.mode = 'send';
     sendButton.classList.toggle('is-generating', sending);
-    // Explicit classes as well as the hidden attribute protect against CSS display rules
-    // overriding SVG's user-agent [hidden] behavior in some browsers.
-    sendArrow.hidden = mode !== 'send';
-    sendStop.hidden = mode !== 'stop';
-    sendArrow.style.display = mode === 'send' ? 'block' : 'none';
-    sendStop.style.display = mode === 'stop' ? 'block' : 'none';
-    sendButton.setAttribute('aria-label', mode === 'stop' ? 'Stop generation' : (sending ? 'Queue follow-up' : 'Send message'));
-    sendButton.title = mode === 'stop' ? 'Stop current response' : (sending ? 'Send follow-up' : 'Send message');
-    sendButton.disabled = state.uploading || (!sending && !hasDraft);
+    sendArrow.hidden = false;
+    sendArrow.style.display = 'block';
+    sendButton.setAttribute('aria-label', sending ? 'Queue follow-up' : 'Send message');
+    sendButton.title = sending ? 'Send follow-up' : 'Send message';
+    sendButton.disabled = !hasDraft;
+    stopButton.classList.toggle('visible', sending);
+    stopButton.disabled = !sending;
+    stopButton.setAttribute('aria-hidden', String(!sending));
     if (sending && request.queuedMessages.length) {
       const progress = $('progressText');
       if (progress) progress.textContent = (request.progress || 'Working…') + ' · ' + request.queuedMessages.length + ' follow-up(s) queued';
@@ -1464,16 +1434,16 @@
 
   async function sendMessage(text, attachmentOverride) {
     const message = String(text || '').trim();
-    const attachments = Array.isArray(attachmentOverride) ? attachmentOverride : state.pendingAttachments.slice();
+    const attachmentDraft = Array.isArray(attachmentOverride) ? attachmentOverride : state.pendingAttachments.slice();
+    const attachments = expandAnalysisAttachments(attachmentDraft);
     const conversationId = ensureConversationId();
     const runningSession = state.requests.get(conversationId);
-    if (!message && !attachments.length) {
+    if (!message && !attachmentDraft.length) {
       if (runningSession) cancelCurrentRequest();
       return;
     }
-    if (state.uploading) { showToast('Wait until the current file import finishes.'); return; }
     if (runningSession) {
-      runningSession.queuedMessages.push({ text: message, attachments });
+      runningSession.queuedMessages.push({ text: message, attachments: attachmentDraft });
       state.pendingAttachments = [];
       input.value = '';
       input.style.height = 'auto';
@@ -1488,7 +1458,7 @@
     }
 
     state.autoScroll = true;
-    const attachmentMeta = attachments.map(item => ({ filename: item.filename, mime_type: item.mime_type, size: item.size }));
+    const attachmentMeta = attachmentDraft.map(item => ({ filename: item.filename, mime_type: item.mime_type, size: item.size }));
     addMessage('user', message || 'Please analyze the attached file(s).', { attachments: attachmentMeta });
     const history = historyPayload().slice(0, -1);
     state.pendingAttachments = [];
@@ -1509,7 +1479,7 @@
     state.requests.set(conversationId, session);
     syncActiveRequestState();
     const assistantIndex = session.messages.length;
-    session.messages.push({ role: 'assistant', content: '', files: [] });
+    session.messages.push({ role: 'assistant', content: '' });
     render();
     await persistRequestSession(session);
     let finalReceived = false;
@@ -1533,7 +1503,6 @@
           if (data.error && !data.cancelled) session.progress = 'Request failed';
         } else {
           session.messages[assistantIndex].content = String(data.message || session.messages[assistantIndex].content || 'Done.');
-          session.messages[assistantIndex].files = Array.isArray(data.files) ? data.files : [];
           if (Array.isArray(data.attachments) && data.attachments.length) {
             session.messages[assistantIndex].analyzedAttachments = data.attachments.map(item => ({ filename:item.filename, kind:item.kind }));
           }
@@ -1541,8 +1510,6 @@
           if (Array.isArray(data.test_results) && data.test_results.length) {
             session.messages.push({ role: 'notice', content: 'Checks: ' + data.test_results.join(' · '), success: data.checks_ok === true });
           }
-          // Keep the session-owned arrays stable when the user switches to another chat.
-          session.uploadedFiles = session.uploadedFiles || [];
         }
         if (state.conversationId === session.conversationId) render();
         schedulePersistRequestSession(session);
@@ -1595,111 +1562,6 @@
     }
   }
 
-  async function getFileContent(file) {
-    if (file.preview !== undefined) return String(file.preview);
-    if (!file.id) throw new Error('This artifact has no downloadable identifier.');
-    const result = await readResponse(await fetch('/api/files/' + encodeURIComponent(file.id) + '/preview', { headers: { Accept: 'text/plain' }, cache: 'no-store' }));
-    return String(result);
-  }
-
-  async function triggerDownload(file) {
-    if (!file || !file.id) throw new Error('This artifact is missing its download identifier.');
-    const response = await fetch('/api/files/' + encodeURIComponent(file.id), { cache: 'no-store' });
-    if (!response.ok) {
-      let detail = 'Download failed (' + response.status + ').';
-      try {
-        const body = await readResponse(response);
-        detail = typeof body === 'string' ? body : (body.error || body.message || detail);
-      } catch (_) { /* Keep the status-based message. */ }
-      throw new Error(detail);
-    }
-    const blob = await response.blob();
-    const objectUrl = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = objectUrl;
-    link.download = String(file.filename || 'download').split(/[\\/]/).pop() || 'download';
-    link.rel = 'noopener';
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
-  }
-
-  async function handleFileAction(action, messageIndex, fileIndex) {
-    const file = state.messages[messageIndex]?.files?.[fileIndex];
-    if (!file) return;
-    try {
-      if (action === 'download') { await triggerDownload(file); return; }
-      const content = await getFileContent(file);
-      if (action === 'copy') {
-        await copyText(content);
-        showToast('Copied ' + (file.filename || 'file'));
-      } else if (action === 'preview') {
-        const panel = messagesEl.querySelector('[data-preview="' + messageIndex + '-' + fileIndex + '"]');
-        if (!panel) return;
-        panel.querySelector('.preview-code').textContent = content;
-        const isHtml = /\.html?$/i.test(file.filename || '') || file.mime_type === 'text/html';
-        const frame = panel.querySelector('.html-preview');
-        if (frame) {
-          frame.hidden = !isHtml;
-          if (isHtml) frame.srcdoc = content;
-          else frame.removeAttribute('srcdoc');
-        }
-        panel.classList.add('open');
-        panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }
-    } catch (error) { showToast('Artifact action failed: ' + friendlyError(error)); }
-  }
-
-  function allFiles() {
-    const map = new Map();
-    state.uploadedFiles.forEach(file => map.set(file.filename, file));
-    state.messages.filter(item => item.role === 'assistant').forEach(item => {
-      (Array.isArray(item.files) ? item.files : []).forEach(file => map.set(file.filename, file));
-    });
-    return Array.from(map.values());
-  }
-
-  function renderArtifacts() {
-    const library = $('artifactLibrary');
-    if (!library) return;
-    const files = allFiles();
-    if (!files.length) {
-      library.innerHTML = '<div class="empty-page">No project files yet. Upload a project ZIP or ask Photon 1 to build something.</div>';
-      return;
-    }
-    library.innerHTML = files.map((file, index) => {
-      const label = [file.mime_type || fileType(file.filename, ''), formatSize(file.size)].filter(Boolean).join(' · ');
-      const canPreview = isTextFile(file);
-      return '<div class="library-entry"><div class="file-card"><div class="file-icon">' + escapeHtml(fileType(file.filename, file.mime_type)) + '</div><div class="file-info"><div class="file-name">' + escapeHtml(file.filename || 'Unnamed file') + '</div><div class="file-meta">' + escapeHtml(label) + '</div></div><div class="file-actions">' + (canPreview ? '<button type="button" data-lib-action="preview" data-library-index="' + index + '">Preview</button><button type="button" data-lib-action="copy" data-library-index="' + index + '">Copy</button>' : '') + '<button type="button" data-lib-action="download" data-library-index="' + index + '">Download</button></div></div><div class="preview-panel" data-library-preview="' + index + '"><div class="preview-head"><span>Preview · ' + escapeHtml(file.filename || 'file') + '</span><button type="button" data-lib-close>Close</button></div><pre class="preview-code">Loading preview…</pre><iframe class="html-preview" title="Isolated HTML project preview" sandbox="allow-scripts" hidden></iframe></div></div>';
-    }).join('');
-    library.querySelectorAll('[data-lib-action]').forEach(button => button.addEventListener('click', () => handleLibraryAction(button.dataset.libAction, Number(button.dataset.libraryIndex))));
-    library.querySelectorAll('[data-lib-close]').forEach(button => button.addEventListener('click', () => button.closest('.preview-panel')?.classList.remove('open')));
-  }
-
-  async function handleLibraryAction(action, index) {
-    const file = allFiles()[index];
-    if (!file) return;
-    try {
-      if (action === 'download') { await triggerDownload(file); return; }
-      const content = await getFileContent(file);
-      if (action === 'copy') {
-        await copyText(content);
-        showToast('Copied ' + (file.filename || 'file'));
-      } else if (action === 'preview') {
-        const panel = $('artifactLibrary').querySelector('[data-library-preview="' + index + '"]');
-        if (!panel) return;
-        panel.querySelector('.preview-code').textContent = content;
-        const isHtml = /\.html?$/i.test(file.filename || '') || file.mime_type === 'text/html';
-        const frame = panel.querySelector('.html-preview');
-        frame.hidden = !isHtml;
-        if (isHtml) frame.srcdoc = content;
-        else frame.removeAttribute('srcdoc');
-        panel.classList.add('open');
-        panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }
-    } catch (error) { showToast('Artifact action failed: ' + friendlyError(error)); }
-  }
 
   function showPage(page) {
     document.querySelectorAll('[data-page-view]').forEach(view => view.classList.toggle('active', view.dataset.pageView === page));
@@ -1939,10 +1801,9 @@
       const purpose = profile.purpose || 'Personal assistant';
       return '<div class="ai-profile-row ' + (selected ? 'selected' : '') + '">' +
         '<button class="ai-profile-use" type="button" data-use-ai="' + escapeHtml(profile.id) + '" title="Start a chat with ' + escapeHtml(profile.name) + '"><strong>' + escapeHtml(profile.name) + '</strong><span>' + escapeHtml(purpose) + '</span></button>' +
-        '<div class="ai-profile-actions"><button type="button" data-api-ai="' + escapeHtml(profile.id) + '" title="API access for ' + escapeHtml(profile.name) + '" aria-label="API access for ' + escapeHtml(profile.name) + '">API</button><button type="button" data-edit-ai="' + escapeHtml(profile.id) + '" title="Edit ' + escapeHtml(profile.name) + '" aria-label="Edit ' + escapeHtml(profile.name) + '">✎</button><button type="button" data-delete-ai="' + escapeHtml(profile.id) + '" title="Delete ' + escapeHtml(profile.name) + '" aria-label="Delete ' + escapeHtml(profile.name) + '">×</button></div></div>';
+        '<div class="ai-profile-actions"><button type="button" data-edit-ai="' + escapeHtml(profile.id) + '" title="Edit ' + escapeHtml(profile.name) + '" aria-label="Edit ' + escapeHtml(profile.name) + '">✎</button><button type="button" data-delete-ai="' + escapeHtml(profile.id) + '" title="Delete ' + escapeHtml(profile.name) + '" aria-label="Delete ' + escapeHtml(profile.name) + '">×</button></div></div>';
     }).join('');
     list.querySelectorAll('[data-use-ai]').forEach(button => button.addEventListener('click', () => startAiConversation(button.dataset.useAi)));
-    list.querySelectorAll('[data-api-ai]').forEach(button => button.addEventListener('click', () => openApiKeyManager(button.dataset.apiAi)));
     list.querySelectorAll('[data-edit-ai]').forEach(button => button.addEventListener('click', () => openAiBuilder(button.dataset.editAi)));
     list.querySelectorAll('[data-delete-ai]').forEach(button => button.addEventListener('click', () => deleteAiProfile(button.dataset.deleteAi)));
   }
@@ -2029,60 +1890,6 @@
     }).filter(product => product.name).slice(0,200);
   }
 
-  async function syncAiProfileForApi(profile) {
-    const response = await fetch('/api/keys', {method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({action:'sync_profile',profile})});
-    if (!response.ok) throw new Error('Could not sync profile with the local API service.');
-    return readResponse(response);
-  }
-
-  async function openApiKeyManager(profileId) {
-    const profile = getAiProfile(profileId);
-    if (!profile) return;
-    state.apiProfileId = profile.id;
-    $('apiKeyTitle').textContent = 'API access · ' + profile.name;
-    $('apiKeyStatus').textContent = '';
-    $('apiKeyValue').value = '';
-    $('apiKeyReveal').hidden = true;
-    $('apiEndpoint').value = window.location.origin + '/v1/chat/completions';
-    $('apiKeyList').innerHTML = '<p class="api-empty">Loading keys…</p>';
-    $('apiKeyDialog').showModal();
-    await loadApiKeys();
-  }
-
-  async function loadApiKeys() {
-    if (!state.apiProfileId) return;
-    try {
-      const response = await readResponse(await fetch('/api/keys?profile_id=' + encodeURIComponent(state.apiProfileId), {headers:{Accept:'application/json'},cache:'no-store'}));
-      const keys = Array.isArray(response.keys) ? response.keys : [];
-      $('apiKeyList').innerHTML = keys.length ? keys.map(key => '<div class="api-key-row"><div class="api-key-meta"><strong>' + escapeHtml(key.name || 'API key') + '</strong><span>Created ' + escapeHtml(new Date(Number(key.created_at || Date.now())).toLocaleString()) + '</span><code>' + escapeHtml(key.prefix || 'inc_live_') + '…</code></div><button class="dialog-secondary api-revoke-button" type="button" data-revoke-api-key="' + escapeHtml(key.id) + '">Revoke</button></div>').join('') : '<p class="api-empty">No active keys for this AI yet.</p>';
-    } catch (_) { $('apiKeyList').innerHTML = '<p class="api-empty">Could not load API keys. Keep the Incandescent service running and try again.</p>'; }
-  }
-
-  async function generateApiKey() {
-    const profile = getAiProfile(state.apiProfileId);
-    if (!profile) { $('apiKeyStatus').textContent = 'Save the AI before creating a key.'; return; }
-    const button = $('generateApiKey');
-    button.disabled = true;
-    $('apiKeyStatus').textContent = 'Generating key…';
-    try {
-      const response = await readResponse(await fetch('/api/keys', {method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({action:'create',profile})}));
-      $('apiKeyValue').value = response.key || '';
-      $('apiKeyReveal').hidden = !response.key;
-      $('apiEndpoint').value = response.endpoint || (window.location.origin + '/v1/chat/completions');
-      $('apiKeyStatus').textContent = response.key ? 'Key generated. Copy and store it safely now.' : 'The service did not return a key.';
-      await loadApiKeys();
-    } catch (error) { $('apiKeyStatus').textContent = friendlyError(error); }
-    finally { button.disabled = false; }
-  }
-
-  async function revokeApiKey(keyId) {
-    if (!window.confirm('Revoke this key? Any integration using it will stop working.')) return;
-    try {
-      await readResponse(await fetch('/api/keys', {method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({action:'revoke',key_id:keyId})}));
-      $('apiKeyStatus').textContent = 'Key revoked.';
-      await loadApiKeys();
-    } catch (error) { $('apiKeyStatus').textContent = friendlyError(error); }
-  }
 
   function createLocalId() {
     if (window.crypto && window.crypto.randomUUID) return window.crypto.randomUUID();
@@ -2102,7 +1909,6 @@
       state.customAIs.unshift(profile);
     }
     if (!await persistAiProfiles()) { $('aiBuilderStatus').textContent = 'Saving failed. Your changes are still in this session.'; return; }
-    syncAiProfileForApi(profile).catch(() => {});
     state.customAIs.sort((a,b) => Number(b.updatedAt || 0) - Number(a.updatedAt || 0));
     renderAiProfiles();
     $('aiBuilderDialog').close();
@@ -2172,7 +1978,7 @@
     if (!pendingAttachmentEl) return;
     pendingAttachmentEl.hidden = state.pendingAttachments.length === 0;
     if (!state.pendingAttachments.length) { pendingAttachmentEl.innerHTML = ''; return; }
-    const totalSize = state.pendingAttachments.reduce((sum, file) => sum + Number(file.size || 0), 0);
+    const totalSize = state.pendingAttachments.reduce((sum, file) => sum + Number(file.size || 0) + (Array.isArray(file.analysis_layers) ? file.analysis_layers.reduce((layerSum, layer) => layerSum + Number(layer.size || 0), 0) : 0), 0);
     const imageSource = file => {
       const mime = /^image\/(?:png|jpeg|webp)$/.test(String(file.mime_type || '')) ? file.mime_type : 'image/png';
       const b64 = String(file.data_base64 || '').replace(/[^A-Za-z0-9+/=]/g, '');
@@ -2181,20 +1987,18 @@
     const cards = state.pendingAttachments.map((file, index) => {
       const name = String(file.filename || 'Untitled file');
       const ext = fileType(name, file.mime_type);
-      const kind = file.kind === 'image' ? 'image' : (/^zip$/i.test(ext) ? 'archive' : 'source');
+      const kind = file.kind === 'image' ? 'image' : 'source';
       const preview = kind === 'image'
         ? '<img class="attachment-thumb" src="' + imageSource(file) + '" alt="Preview of ' + escapeHtml(name) + '" loading="lazy">'
-        : '<div class="attachment-type-icon ' + kind + '" aria-hidden="true">' + (kind === 'archive'
-          ? '<svg viewBox="0 0 24 24"><path d="M5 4.5h10l4 4v11H5zM15 4.5v4h4M9 5v3m0 3v2m0 3v2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'
-          : '<svg viewBox="0 0 24 24"><path d="M8 4.5h8l4 4v11H4v-15zM16 4.5v4h4M8 12h8M8 15h6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>') + '</div>';
-      const typeLabel = kind === 'image' ? 'IMAGE' : (kind === 'archive' ? 'PROJECT ZIP' : (ext || 'SOURCE'));
+        : '<div class="attachment-type-icon source" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 4.5h8l4 4v11H4v-15zM16 4.5v4h4M8 12h8M8 15h6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>';
+      const typeLabel = kind === 'image' ? 'IMAGE' : (ext || 'SOURCE');
       return '<article class="attachment-card attachment-' + kind + '">' + preview +
-        '<div class="attachment-detail"><div class="attachment-topline"><span class="attachment-kind">' + escapeHtml(typeLabel) + '</span><span class="attachment-ready"><i aria-hidden="true"></i> Ready</span></div>' +
+        '<div class="attachment-detail"><div class="attachment-topline"><span class="attachment-kind">' + escapeHtml(typeLabel) + '</span><span class="attachment-ready"><i aria-hidden="true"></i> Added</span></div>' +
         '<div class="attachment-name" title="' + escapeHtml(name) + '">' + escapeHtml(name) + '</div>' +
-        '<div class="attachment-meta">' + formatSize(file.size) + (kind === 'image' ? ' · image preview' : kind === 'archive' ? ' · project archive' : ' · source file') + '</div></div>' +
+        '<div class="attachment-meta">' + formatSize(file.size) + (kind === 'image' ? ' · image preview' : ' · source file') + '</div></div>' +
         '<button class="attachment-remove" type="button" data-remove-attachment="' + index + '" aria-label="Remove ' + escapeHtml(name) + '" title="Remove file"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button></article>';
     }).join('');
-    pendingAttachmentEl.innerHTML = '<div class="attachment-heading"><div class="attachment-heading-copy"><span class="attachment-heading-title">Ready to attach</span><span class="attachment-heading-meta">' + state.pendingAttachments.length + (state.pendingAttachments.length === 1 ? ' file' : ' files') + ' · ' + formatSize(totalSize) + '</span></div><button type="button" class="attachment-clear" id="clearPendingAttachments">Clear all</button></div><div class="attachment-grid">' + cards + '</div><div class="attachment-footnote"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5 20 7v5.5c0 4.3-3 6.8-8 8-5-1.2-8-3.7-8-8V7zM8.5 12l2.2 2.2 4.8-4.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Files are checked before they are sent for analysis.</span></div>';
+    pendingAttachmentEl.innerHTML = '<div class="attachment-heading"><div class="attachment-heading-copy"><span class="attachment-heading-title">Attachments</span><span class="attachment-heading-meta">' + state.pendingAttachments.length + (state.pendingAttachments.length === 1 ? ' file' : ' files') + ' · ' + formatSize(totalSize) + '</span></div><button type="button" class="attachment-clear" id="clearPendingAttachments">Clear all</button></div><div class="attachment-grid">' + cards + '</div><div class="attachment-footnote"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5 20 7v5.5c0 4.3-3 6.8-8 8-5-1.2-8-3.7-8-8V7zM8.5 12l2.2 2.2 4.8-4.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Attachments are prepared for analysis.</span></div>';
     pendingAttachmentEl.querySelectorAll('[data-remove-attachment]').forEach(button => button.addEventListener('click', () => {
       const index = Number(button.dataset.removeAttachment);
       if (Number.isInteger(index) && index >= 0 && index < state.pendingAttachments.length) state.pendingAttachments.splice(index, 1);
@@ -2208,6 +2012,79 @@
     });
   }
 
+  async function buildImageAnalysisLayers(filename, dataUrl) {
+    const image = new Image();
+    await new Promise((resolve, reject) => {
+      image.onload = resolve;
+      image.onerror = () => reject(new Error('This image could not be decoded. Try a PNG, JPEG, or WebP image.'));
+      image.src = dataUrl;
+    });
+    const scale = Math.min(1, 480 / Math.max(image.naturalWidth || image.width, image.naturalHeight || image.height));
+    const width = Math.max(1, Math.round((image.naturalWidth || image.width) * scale));
+    const height = Math.max(1, Math.round((image.naturalHeight || image.height) * scale));
+    const sourceCanvas = document.createElement('canvas');
+    sourceCanvas.width = width; sourceCanvas.height = height;
+    const sourceContext = sourceCanvas.getContext('2d', { willReadFrequently: true });
+    if (!sourceContext) throw new Error('Image processing is unavailable in this browser.');
+    sourceContext.drawImage(image, 0, 0, width, height);
+    const pixels = sourceContext.getImageData(0, 0, width, height);
+    const luminance = new Float32Array(width * height);
+    for (let i = 0, p = 0; i < pixels.data.length; i += 4, p++) luminance[p] = pixels.data[i] * 0.2126 + pixels.data[i + 1] * 0.7152 + pixels.data[i + 2] * 0.0722;
+    // Sobel gradient map helps reveal boundaries and geometry.
+    const edgeCanvas = document.createElement('canvas');
+    edgeCanvas.width = width; edgeCanvas.height = height;
+    const edgeContext = edgeCanvas.getContext('2d');
+    if (!edgeContext) throw new Error('Could not create the image edge map.');
+    const edgeData = edgeContext.createImageData(width, height);
+    const lum = (x, y) => luminance[Math.max(0, Math.min(height - 1, y)) * width + Math.max(0, Math.min(width - 1, x))];
+    for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+      const gx = -lum(x-1,y-1) + lum(x+1,y-1) - 2*lum(x-1,y) + 2*lum(x+1,y) - lum(x-1,y+1) + lum(x+1,y+1);
+      const gy = -lum(x-1,y-1) - 2*lum(x,y-1) - lum(x+1,y-1) + lum(x-1,y+1) + 2*lum(x,y+1) + lum(x+1,y+1);
+      const value = 255 - Math.min(255, Math.round(Math.hypot(gx, gy) * 0.42));
+      const offset = (y * width + x) * 4;
+      edgeData.data[offset] = value; edgeData.data[offset+1] = value; edgeData.data[offset+2] = value; edgeData.data[offset+3] = 255;
+    }
+    edgeContext.putImageData(edgeData, 0, 0);
+    // Quantized low-resolution color map highlights large regions with less texture noise.
+    const regionWidth = Math.max(1, Math.round(width / 4));
+    const regionHeight = Math.max(1, Math.round(height / 4));
+    const regionCanvas = document.createElement('canvas');
+    regionCanvas.width = regionWidth; regionCanvas.height = regionHeight;
+    const regionContext = regionCanvas.getContext('2d', { willReadFrequently: true });
+    if (!regionContext) throw new Error('Could not create the color-region map.');
+    regionContext.drawImage(sourceCanvas, 0, 0, regionWidth, regionHeight);
+    const regionData = regionContext.getImageData(0, 0, regionWidth, regionHeight);
+    for (let i = 0; i < regionData.data.length; i += 4) {
+      regionData.data[i] = Math.round(regionData.data[i] / 64) * 64;
+      regionData.data[i+1] = Math.round(regionData.data[i+1] / 64) * 64;
+      regionData.data[i+2] = Math.round(regionData.data[i+2] / 64) * 64;
+    }
+    regionContext.putImageData(regionData, 0, 0);
+    const colorCanvas = document.createElement('canvas');
+    colorCanvas.width = width; colorCanvas.height = height;
+    const colorContext = colorCanvas.getContext('2d');
+    if (!colorContext) throw new Error('Could not upscale the color-region map.');
+    colorContext.imageSmoothingEnabled = false;
+    colorContext.drawImage(regionCanvas, 0, 0, width, height);
+    const sourceName = String(filename || 'image').replace(/\.[^.]+$/, '').replace(/[^A-Za-z0-9_.-]/g, '_').slice(0, 55) || 'image';
+    const token = createLocalId().slice(0, 8);
+    const toLayer = (name, canvas) => {
+      const encoded = canvas.toDataURL('image/png').split(',')[1] || '';
+      return { filename: name, mime_type: 'image/png', size: Math.floor(encoded.length * 3 / 4), kind: 'image', data_base64: encoded };
+    };
+    return [toLayer(sourceName + '-' + token + '-edges.png', edgeCanvas), toLayer(sourceName + '-' + token + '-colors.png', colorCanvas)];
+  }
+
+  function expandAnalysisAttachments(items) {
+    return (Array.isArray(items) ? items : []).flatMap(item => {
+      if (item && item.kind === 'image' && Array.isArray(item.analysis_layers)) {
+        const { analysis_layers, ...original } = item;
+        return [original, ...analysis_layers];
+      }
+      return [item];
+    });
+  }
+
   const TEXT_EXTS = new Set(['txt','html','htm','css','scss','js','mjs','cjs','ts','tsx','jsx','json','md','py','xml','svg','yml','yaml','toml','ini','cfg','conf','sh','bat','ps1','sql','java','go','rs','c','h','cpp','hpp','php','rb','vue','svelte','astro','gitignore','editorconfig']);
   const IMAGE_EXTS = new Set(['png','jpg','jpeg','webp']);
   function fileExt(name) { return String(name || '').split('.').pop().toLowerCase(); }
@@ -2215,20 +2092,24 @@
   async function handleSelectedFiles(files) {
     const list = Array.from(files || []);
     if (!list.length) return;
-    let zipped = [];
     let accepted = 0;
     for (const file of list) {
       const ext = fileExt(file.name);
-      if (ext === 'zip') { zipped.push(file); continue; }
       const expectedImageMime = IMAGE_EXTS.has(ext) ? 'image/' + (ext === 'jpg' ? 'jpeg' : ext) : '';
       const mime = expectedImageMime ? (file.type === expectedImageMime ? file.type : expectedImageMime) : (file.type && (file.type.startsWith('text/') || file.type === 'application/json') ? file.type : 'text/plain');
       if (!TEXT_EXTS.has(ext) && !IMAGE_EXTS.has(ext)) { showToast('Unsupported file: ' + file.name); continue; }
       if (file.size > 1_500_000) { showToast(file.name + ' is too large. Each text/image file is limited to 1.5 MB.'); continue; }
-      const total = state.pendingAttachments.reduce((sum,item)=>sum + Number(item.size || 0),0) + file.size;
-      if (total > 3_500_000) { showToast('Pending attachments are limited to 3.5 MB total.'); break; }
+      const total = state.pendingAttachments.reduce((sum,item)=>sum + Number(item.size || 0) + (Array.isArray(item.analysis_layers) ? item.analysis_layers.reduce((a,layer)=>a + Number(layer.size || 0),0) : 0),0) + file.size;
+      if (total > 3_500_000) { showToast('Pending attachments are limited to 3.5 MB including image analysis layers.'); break; }
       if (IMAGE_EXTS.has(ext)) {
         const dataUrl = await new Promise((resolve,reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result || '')); reader.onerror = () => reject(new Error('Could not read image ' + file.name)); reader.readAsDataURL(file); });
-        state.pendingAttachments.push({ filename:file.name, mime_type:mime, size:file.size, kind:'image', data_base64:dataUrl.split(',')[1] || '' });
+        const original = { filename:file.name, mime_type:mime, size:file.size, kind:'image', data_base64:dataUrl.split(',')[1] || '' };
+        original.analysis_layers = await buildImageAnalysisLayers(file.name, dataUrl);
+        const stagedSize = state.pendingAttachments.reduce((sum,item)=>sum + Number(item.size || 0) + (Array.isArray(item.analysis_layers) ? item.analysis_layers.reduce((a,layer)=>a + Number(layer.size || 0),0) : 0),0);
+        const imageSetSize = Number(original.size || 0) + original.analysis_layers.reduce((sum,layer)=>sum + Number(layer.size || 0),0);
+        const stagedCount = state.pendingAttachments.reduce((sum,item)=>sum + 1 + (Array.isArray(item.analysis_layers) ? item.analysis_layers.length : 0),0);
+        if (stagedCount + 3 > 12 || stagedSize + imageSetSize > 3_500_000) { showToast('There is not enough attachment capacity for this image and its analysis layers.'); continue; }
+        state.pendingAttachments.push(original);
       } else {
         const content = await file.text();
         state.pendingAttachments.push({ filename:file.name, mime_type:mime, size:file.size, kind:'text', content });
@@ -2236,26 +2117,18 @@
       accepted++;
     }
     renderPendingAttachments(); updateSendButton();
-    // The attachment tray itself confirms readiness; avoid a toast obscuring the send controls on mobile.
-    if (zipped.length) {
-      if (state.sending || state.uploading) {
-        state.queuedZipUploads.push(...zipped);
-        showToast(zipped.length + ' ZIP import(s) queued until the current task finishes');
-      } else {
-        for (const zip of zipped) await uploadProject(zip);
-      }
-    }
   }
 
   async function runQueuedTurnInBackground(session, next) {
     if (!session || session.deleted || !next) return;
     const conversationId = session.conversationId;
     const message = String(next.text || '').trim();
-    const attachments = Array.isArray(next.attachments) ? next.attachments : [];
-    const attachmentMeta = attachments.map(item => ({ filename:item.filename, mime_type:item.mime_type, size:item.size }));
+    const attachmentDraft = Array.isArray(next.attachments) ? next.attachments : [];
+    const attachments = expandAnalysisAttachments(attachmentDraft);
+    const attachmentMeta = attachmentDraft.map(item => ({ filename:item.filename, mime_type:item.mime_type, size:item.size }));
     session.messages.push({ role:'user', content:message || 'Please analyze the attached file(s).', attachments:attachmentMeta });
     const assistantIndex = session.messages.length;
-    session.messages.push({ role:'assistant', content:'', files:[] });
+    session.messages.push({ role: 'assistant', content: '' });
     session.controller = new AbortController();
     session.progress = 'Working on queued follow-up…';
     state.requests.set(conversationId, session);
@@ -2286,7 +2159,6 @@
           if (data.cancelled) session.messages[assistantIndex].content = 'Request cancelled.';
         } else {
           session.messages[assistantIndex].content = String(data.message || session.messages[assistantIndex].content || 'Done.');
-          session.messages[assistantIndex].files = Array.isArray(data.files) ? data.files : [];
           if (Array.isArray(data.attachments) && data.attachments.length) session.messages[assistantIndex].analyzedAttachments = data.attachments.map(item => ({ filename:item.filename, kind:item.kind }));
           if (data.status) session.messages.push({ role:'notice', content:data.status, success:data.checks_ok === true });
           if (Array.isArray(data.test_results) && data.test_results.length) session.messages.push({ role:'notice', content:'Checks: ' + data.test_results.join(' · '), success:data.checks_ok === true });
@@ -2391,6 +2263,8 @@
   function cancelCurrentRequest() {
     const session = activeRequest();
     if (!session) return;
+    const queuedCount = session.queuedMessages.length;
+    session.queuedMessages.length = 0;
     fetch('/api/cancel', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -2398,6 +2272,8 @@
       keepalive: true
     }).catch(() => {});
     session.controller.abort();
+    persistRequestSession(session).catch(() => {});
+    showToast(queuedCount ? 'Response stopped; queued follow-ups cancelled.' : 'Response stopped');
   }
 
   function clearConversation() {
@@ -2418,41 +2294,6 @@
     input.focus();
   }
 
-  async function uploadProject(file) {
-    if (!file) return;
-    if (state.sending || state.uploading) { showToast('Wait for the current request before importing a ZIP.'); return; }
-    if (!/\.zip$/i.test(file.name || '')) { showToast('Choose a .zip project archive.'); return; }
-    if (file.size > 12 * 1024 * 1024) { showToast('Project ZIPs are limited to 12 MB. Remove build output and dependencies first.'); return; }
-    const conversationId = ensureConversationId();
-    state.uploading = true;
-    state.progress = 'Reading project files…';
-    render();
-    try {
-      const response = await fetch('/api/upload?conversation_id=' + encodeURIComponent(conversationId), {
-        method: 'POST', headers: { 'Content-Type': 'application/zip', Accept: 'application/json' }, body: file
-      });
-      const data = await readResponse(response);
-      if (data.ok !== true) throw new Error(data.error || 'Project import failed.');
-      state.conversationId = data.conversation_id || conversationId;
-      const merged = new Map(state.uploadedFiles.map(item => [item.filename, item]));
-      (Array.isArray(data.files) ? data.files : []).forEach(item => merged.set(item.filename, item));
-      state.uploadedFiles = Array.from(merged.values());
-      state.messages.push({ role: 'assistant', content: data.message + '. The project files are loaded into this chat. Tell me what to build, inspect, or fix.' });
-      persistActiveChat();
-      showPage('workspace');
-      showToast('Project loaded · ' + (data.imported_count || 0) + ' files');
-    } catch (error) {
-      addMessage('notice', 'Could not import project: ' + friendlyError(error));
-    } finally {
-      state.uploading = false;
-      state.progress = '';
-      attachmentInput.value = '';
-      render();
-      input.focus();
-      processNextQueuedAction();
-    }
-  }
-
   async function loadInstalledModels(keepSelection = true) {
     const select = $('modelSelect');
     const note = $('modelPickerStatus');
@@ -2463,8 +2304,8 @@
       const models = Array.isArray(data.models) ? data.models : [];
       select.replaceChildren();
       if (!models.length) {
-        select.add(new Option('No installed models found', ''));
-        note.textContent = 'No models were returned. Check that the AI service is running.';
+        select.add(new Option('No model choices available', ''));
+        note.textContent = 'Model choices are currently unavailable. Reopen settings and try again.';
         note.className = 'model-picker-status error';
         return;
       }
@@ -2474,11 +2315,11 @@
       }
       const selected = models.some(model => model.name === previous) ? previous : (data.selected || '');
       if (selected && Array.from(select.options).some(option => option.value === selected)) select.value = selected;
-      note.textContent = 'Choose an installed model. Changing it affects new replies; wait for any active reply to finish first.';
+      note.textContent = 'Select the model for new replies. Wait for an active reply to finish before switching.';
       note.className = 'model-picker-status';
     } catch (error) {
       select.replaceChildren(new Option('Could not load models', ''));
-      note.textContent = 'Could not load installed models. Restart Incandescent and refresh this list by reopening the app.';
+      note.textContent = 'Could not load model choices. Reopen settings and try again.';
       note.className = 'model-picker-status error';
     }
   }
@@ -2486,7 +2327,7 @@
   async function checkStatus() {
     try {
       const data = await readResponse(await fetch('/api/status', { headers: { Accept: 'application/json' }, cache: 'no-store' }));
-      if (data.ollama_connected) setStatus('online', 'Ready');
+      if (data.ollama_connected) setStatus('online', 'Available');
       else setStatus('offline', 'Assistant unavailable');
       const select = $('modelSelect');
       if (select && data.model && Array.from(select.options).some(option => option.value === data.model) && select.value !== data.model) select.value = data.model;
@@ -2511,13 +2352,8 @@
 
   document.querySelectorAll('.starter[data-prompt]').forEach(button => button.addEventListener('click', () => { input.value = button.dataset.prompt || ''; input.dispatchEvent(new Event('input')); input.focus(); }));
   document.querySelectorAll('.page-tab').forEach(tab => tab.addEventListener('click', () => showPage(tab.dataset.page)));
-  $('newConversation').addEventListener('click', clearConversation);
   $('sidebarNewChat').addEventListener('click', clearConversation);
   $('sidebarToggle').addEventListener('click', () => {
-    if (window.innerWidth <= 760) sidebar.classList.toggle('mobile-open');
-    else document.body.classList.toggle('sidebar-collapsed');
-  });
-  $('sidebarCollapse').addEventListener('click', () => {
     if (window.innerWidth <= 760) sidebar.classList.toggle('mobile-open');
     else document.body.classList.toggle('sidebar-collapsed');
   });
@@ -2529,16 +2365,11 @@
   $('aiBuilderSaveTest').addEventListener('click', () => saveAiProfile(true));
   $('addCatalogProduct').addEventListener('click', () => {
     const list = $('aiCatalogList');
-    if (list.querySelectorAll('[data-catalog-row]').length >= 200) { $('aiBuilderStatus').textContent = 'The local builder supports up to 200 products per AI profile.'; return; }
+    if (list.querySelectorAll('[data-catalog-row]').length >= 200) { $('aiBuilderStatus').textContent = 'You can add up to 200 products to this AI profile.'; return; }
     addCatalogProductRow();
   });
   $('aiCatalogList').addEventListener('click', event => { const button = event.target.closest('[data-remove-catalog]'); if (button) button.closest('[data-catalog-row]').remove(); });
   $('aiBuilderForm').addEventListener('submit', event => event.preventDefault());
-  $('apiKeyClose').addEventListener('click', () => { $('apiKeyValue').value = ''; $('apiKeyReveal').hidden = true; $('apiKeyDialog').close(); });
-  $('apiKeyDone').addEventListener('click', () => { $('apiKeyValue').value = ''; $('apiKeyReveal').hidden = true; $('apiKeyDialog').close(); });
-  $('generateApiKey').addEventListener('click', generateApiKey);
-  $('copyApiKey').addEventListener('click', async () => { const key = $('apiKeyValue').value; if (!key) return; try { await navigator.clipboard.writeText(key); $('apiKeyStatus').textContent = 'Key copied.'; } catch (_) { $('apiKeyValue').focus(); $('apiKeyValue').select(); $('apiKeyStatus').textContent = 'Press Ctrl+C to copy the selected key.'; } });
-  $('apiKeyList').addEventListener('click', event => { const button = event.target.closest('[data-revoke-api-key]'); if (button) revokeApiKey(button.dataset.revokeApiKey); });
   $('switchDefaultAi').addEventListener('click', async () => {
     await persistActiveChat();
     state.conversationId = null;
@@ -2562,9 +2393,7 @@
   $('personalizationClose').addEventListener('click', () => $('personalizationDialog').close());
   $('savePersonalization').addEventListener('click', async () => { await savePersonalization(); });
   $('clearPersonalization').addEventListener('click', async () => { $('personalizationText').value = ''; $('personalizationEnabled').checked = false; await savePersonalization(); });
-  sendButton.addEventListener('click', event => {
-    if (state.sending && !(input.value.trim() || state.pendingAttachments.length)) { event.preventDefault(); cancelCurrentRequest(); }
-  });
+  stopButton.addEventListener('click', () => cancelCurrentRequest());
   uploadButton.addEventListener('click', () => attachmentInput.click());
   attachmentInput.addEventListener('change', () => { handleSelectedFiles(attachmentInput.files).catch(error => showToast(friendlyError(error))); });
   const composerNode = $('composer');

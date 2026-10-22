@@ -24,7 +24,11 @@ jobs:
         run: |
           python -c "from pathlib import Path; import re; h=Path('index.html').read_text(encoding='utf-8'); m=re.search(r'<script>(.*?)</script>', h, re.S); assert m, 'main script not found'; Path('/tmp/incandescent-ui.js').write_text(m.group(1), encoding='utf-8')"
           node --check /tmp/incandescent-ui.js
-      - name: Run core regression suite
+      - name: Compile maintained Python modules
+        run: |
+          python -m py_compile server.py run_incandescent.py evaluation/run_eval.py training/check_hardware.py training/prepare_dataset.py training/train_lora.py test_engine.py test_features.py test_training_pipeline.py
+      - name: Run chat, UI and training-tool regression suites
         run: |
           python test_engine.py
           python test_features.py
+          python test_training_pipeline.py
