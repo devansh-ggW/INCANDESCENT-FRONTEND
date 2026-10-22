@@ -55,7 +55,7 @@ if errorlevel 1 (
 
 where ollama >nul 2>nul
 if errorlevel 1 (
-  echo The AI runtime component was not found. Install or repair the configured AI runtime, then relaunch Incandescent.
+  echo The configured AI component is unavailable. Check the application setup and relaunch Incandescent.
   pause
   exit /b 1
 )
@@ -74,7 +74,7 @@ if errorlevel 1 (
 
 :RuntimeReady
 set "INCANDESCENT_MODEL=photon1"
-echo Selected model: %INCANDESCENT_MODEL%
+echo Initializing the assistant...
 set "BUILD_PHOTON=0"
 call ollama show photon1 >nul 2>nul
 if errorlevel 1 set "BUILD_PHOTON=1"
@@ -83,13 +83,13 @@ if not "%BUILD_PHOTON%"=="1" (
   if errorlevel 1 set "BUILD_PHOTON=1"
 )
 if "%BUILD_PHOTON%"=="1" (
-  echo Preparing Photon 1 from qwen3:1.7b-q4_K_M. This can take a little while...
+  echo Preparing the configured model. This can take a little while...
   call ollama create photon1 -f "%~dp0Modelfile"
   if errorlevel 1 (
-    echo WARNING: Photon 1 could not be prepared. Falling back to qwen3:1.7b-q4_K_M.
+    echo WARNING: The configured model could not be prepared. Switching to a compatible model.
     set "INCANDESCENT_MODEL=qwen3:1.7b-q4_K_M"
   ) else (
-    echo Model configuration verified.
+    echo Assistant configuration verified.
   )
 )
 rem Keep the service console visible so startup errors and request logs can be inspected.
@@ -107,6 +107,6 @@ if "%INCANDESCENT_READY%"=="1" (
   endlocal
   exit /b 0
 )
-echo Incandescent could not start. Check the minimized service window for details, then retry.
+echo Incandescent could not start. Check the service window for details, then retry.
 pause
 endlocal
