@@ -5,13 +5,14 @@ cd /d "%~dp0"
 echo.
 echo ============================================
 echo  INCANDESCENT Desktop Build
+echo  Bundled renderer - no WebView2 install
 echo ============================================
 echo.
 py -3.11 --version >nul 2>nul
 if errorlevel 1 (
-  echo Python 3.11 was not found.
-  echo Install Python 3.11 x64, then run this file again.
-  echo The final EXE does not require Python on the target PC.
+  echo Python 3.11 x64 was not found.
+  echo Install Python 3.11 x64 to build the EXE.
+  echo Users who receive the final EXE do not need Python.
   pause
   exit /b 1
 )
@@ -26,14 +27,16 @@ py -3.11 -m PyInstaller --noconfirm --clean --onefile --windowed ^
   --icon incandescent.ico ^
   --add-data "index.html;." ^
   --add-data "incandescent.ico;." ^
-  --collect-all webview ^
-  --collect-all clr_loader ^
-  --collect-all pythonnet ^
+  --hidden-import server ^
+  --hidden-import run_incandescent ^
+  --collect-all PyQt5 ^
+  --collect-all PyQt5.QtWebEngineWidgets ^
   desktop_app.py
 if errorlevel 1 goto failed
 
 echo.
 echo Build complete: dist\INCANDESCENT.exe
+echo This EXE bundles its own Qt WebEngine renderer.
 echo.
 pause
 exit /b 0
