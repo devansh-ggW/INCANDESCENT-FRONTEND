@@ -98,7 +98,7 @@ def main() -> None:
         )
         check(result["ok"] and result["message"] == "Image and text analysis works.",
               "image request produces a normal text answer")
-        check(result["files"] == [], "assistant response does not create generated files")
+        check("files" not in result, "assistant response has no generated-file field")
         check(captured["use_tools"] is False, "model tool calls are disabled")
         check(captured["model_override"] == "qwen3.5:2b", "vision model is selected for image analysis")
         user_turn = captured["messages"][-1]
@@ -113,8 +113,8 @@ def main() -> None:
             {"message": "Give me a Python example in chat.", "history": []},
             "test-text-chat", threading.Event()
         )
-        check(text_result["ok"] and text_result["files"] == [],
-              "ordinary chat stays text-only and never emits files")
+        check(text_result["ok"] and "files" not in text_result,
+              "ordinary chat stays text-only and has no file-output field")
         check(captured["use_tools"] is False, "text response does not enable tools")
 
         cancelled = threading.Event()
@@ -164,7 +164,7 @@ def main() -> None:
         final = [item["data"] for item in events if item.get("type") == "final"][-1]
         check(deltas == "Hello from Incandescent.", "stream includes incremental response text")
         check(final["ok"] and final["message"] == deltas, "stream final matches emitted text")
-        check(final["files"] == [] and streamed["tools"] is False, "streaming remains text-only")
+        check("files" not in final and streamed["tools"] is False, "streaming remains text-only")
 
         for route in ("/api/keys", "/api/files/unknown", "/api/upload"):
             try:
