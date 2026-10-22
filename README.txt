@@ -1,67 +1,45 @@
-INCANDESCENT AI
-===============
-A personal AI workspace powered by Photon 1.
+INCANDESCENT
+============
+A chat-first AI workspace for thoughtful answers, code, custom assistant profiles, and image analysis.
 
-GET STARTED
------------
-1. Extract the complete ZIP into a folder.
+START THE APP
+-------------
+1. Extract the complete application folder.
 2. Double-click START-INCANDESCENT.bat.
-3. Use the Incandescent application window that opens; the service window is minimized.
-4. Leave the service running while using the app. Do not open index.html directly.
+3. Use the Incandescent window that opens. Keep the service window open while using it.
+4. Do not open index.html directly; the app window connects to the running service.
 
-CREATE YOUR OWN AI
-------------------
-1. Select + Create your AI in the sidebar.
-2. Give it a name and describe what it should help with. The other fields define its audience, tone, response style, background knowledge, and additional instructions.
-3. Select Save AI to keep it in your workspace, or Save & test to open a new conversation and run an introduction test.
-4. Select a saved AI under Your AIs to start another separate conversation with its profile. Use the edit button to update it or the delete button to remove it.
+CREATE A PERSONAL ASSISTANT
+---------------------------
+1. Select Create your AI in the sidebar.
+2. Give the assistant a name and describe its purpose, audience, style, background, and business details.
+3. Save the profile or select Save & test to begin a conversation with it.
+4. Select a saved profile to start a separate conversation. You can edit or delete saved profiles.
 
-Custom AIs are saved in this browser's local storage (IndexedDB with a localStorage fallback). They are behavioral profiles used as context for Photon 1; they do not create separate model weights. Profiles do not sync across browsers or computers in this release. API key generation and hosted API access are not included yet.
+Profiles are stored in the current browser's IndexedDB, with a localStorage fallback. They do not sync across browsers or devices, and creating a profile does not train new model weights.
 
 WHAT YOU CAN DO
 ---------------
-- Ask questions and get streaming replies.
-- Build websites, scripts, APIs, and multi-file project deliverables.
-- Upload source files or a supported project ZIP for analysis.
-- Copy code from chat, preview files, and download individual artifacts or a ZIP.
-- Save conversations and personalize how Incandescent responds.
+- Ask questions and receive streamed text responses.
+- Get code directly in chat, with one-click copying for code blocks and full responses.
+- Attach supported source text or code for analysis.
+- Drop a PNG, JPEG, or WebP image for visual analysis. The app sends the original image with edge and simplified-color analysis views to a vision-capable model.
+- Save chat history and personalize responses.
 - Use speech-to-text in browsers that support it.
 
-TIPS FOR STRONGER RESULTS
--------------------------
-- For a large project, ask for a complete first milestone, then iterate in follow-ups.
-- Upload project source and manifests, not dependency folders or build output.
-- Review generated code before using it in production. Static checks do not prove
-  runtime correctness, and generated code is not automatically executed.
-- Image understanding depends on the selected model configuration. If image
-  analysis is unavailable, text and source-code attachments still work.
+TEXT-ONLY OUTPUT
+----------------
+Generated code and explanations stay in the conversation. This build does not create downloadable output files, import project ZIPs, expose API keys, or provide a hosted API. Copy the exact code or response from the chat when needed.
 
 TROUBLESHOOTING
 ---------------
-- If Incandescent says the assistant is unavailable, close the application and
-  relaunch START-INCANDESCENT.bat. Check the setup if the message persists.
-- If the application cannot connect, check the minimized service window and
-  relaunch the app. The launcher prefers a standalone app window when a supported
-  browser is installed.
-- If a project ZIP imports no source files, exclude dependencies, build folders,
-  binary blobs, and secrets. Import is limited to 12 MB compressed and up to 80
-  supported source files / 12 MB of unpacked text.
-- Generated artifacts are temporary session outputs. Download important files
-  before closing or restarting the application.
-- If the default application port is occupied, close the previous Incandescent
-  instance or set INCANDESCENT_PORT=8766 in Command Prompt before restarting.
+- If a reply cannot start, close the application and relaunch START-INCANDESCENT.bat.
+- If no model choices appear in Settings, check the configured model service and reopen Settings.
+- If image analysis is unavailable, select an installed vision-capable model.
+- If the application port is already in use, close the previous Incandescent service before relaunching.
 
-RESPONSIVENESS
----------------
-While a request is being processed, the Windows supervisor temporarily yields
-CPU scheduling priority for the model runtime so foreground apps can remain
-responsive. It restores the previous priorities after the request. This does not
-change model weights or answer-quality settings; token generation can still be
-slow on older CPUs.
+QUALITY AND LIMITATIONS
+-----------------------
+The quality of responses depends on the selected model and its available context. Edge and color views are supporting visual signals; object and text interpretation is performed by the selected vision model and can be uncertain. Static tests do not replace real-model testing on the target Windows computer.
 
-MODEL AND TRAINING
-------------------
-Photon 1 is the coding model used by Incandescent, based on the configured
-Qwen3.5 2B model in this release. This release does not include new model-weight
-training. Advanced training and evaluation utilities require a suitable training
-environment and a reviewed, legally usable dataset.
+No installer, user accounts, cloud profile sync, hosted API, or model fine-tuning is included in this build.
