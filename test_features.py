@@ -34,6 +34,8 @@ checks = {
     "image analysis builds edge and color layers": "buildImageAnalysisLayers" in HTML and "Sobel gradient map" in HTML and "Quantized low-resolution color map" in HTML,
     "image layers are included in model requests": "expandAnalysisAttachments(attachmentDraft)" in HTML and "analysis_layers" in HTML,
     "assistant responses render as chat text": "function renderMessage(item, index)" in HTML and "renderMarkdown(item.content)" in HTML,
+    "custom AI names are escaped inside message markup": "escapeHtml(label)" in HTML,
+    "attachment size includes derived image layers": "file.analysis_layers.reduce" in HTML and "layer.size" in HTML,
     "generated artifact page is removed": 'id="page-artifacts"' not in HTML and "artifactLibrary" not in HTML,
     "API key UI is removed": "apiKeyDialog" not in HTML and "generateApiKey" not in HTML and "data-api-ai" not in HTML,
     "ZIP upload UI is removed": "uploadProject" not in HTML and "queuedZipUploads" not in HTML and "/api/upload" not in HTML,
