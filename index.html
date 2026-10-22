@@ -1345,7 +1345,7 @@
     const label = isUser ? 'You' : (activeProfile ? activeProfile.name : 'Incandescent');
     const attached = Array.isArray(item.attachments) && item.attachments.length ? '<div class="message-attachments">' + item.attachments.map(file => '<span class="pending-chip">' + escapeHtml(file.filename) + '</span>').join('') + '</div>' : '';
     const copyAction = isUser ? '' : '<div class="message-actions"><button class="copy-response" type="button" data-copy-message="' + index + '" title="Copy response" aria-label="Copy response"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span>Copy</span></button></div>';
-    return '<article class="message ' + (isUser ? 'user' : 'assistant') + '" data-message-index="' + index + '"><div class="avatar" aria-hidden="true">' + (isUser ? 'YOU' : '<img src="/incandescent.ico?v=6" alt="" loading="lazy">') + '</div><div class="message-body"><div class="message-label">' + label + '</div><div class="message-content">' + renderMarkdown(item.content) + '</div>' + copyAction + attached + '</div></article>';
+    return '<article class="message ' + (isUser ? 'user' : 'assistant') + '" data-message-index="' + index + '"><div class="avatar" aria-hidden="true">' + (isUser ? 'YOU' : '<img src="/incandescent.ico?v=6" alt="" loading="lazy">') + '</div><div class="message-body"><div class="message-label">' + escapeHtml(label) + '</div><div class="message-content">' + renderMarkdown(item.content) + '</div>' + copyAction + attached + '</div></article>';
   }
 
   function addMessage(role, content, extra) {
@@ -1980,7 +1980,7 @@
     if (!pendingAttachmentEl) return;
     pendingAttachmentEl.hidden = state.pendingAttachments.length === 0;
     if (!state.pendingAttachments.length) { pendingAttachmentEl.innerHTML = ''; return; }
-    const totalSize = state.pendingAttachments.reduce((sum, file) => sum + Number(file.size || 0), 0);
+    const totalSize = state.pendingAttachments.reduce((sum, file) => sum + Number(file.size || 0) + (Array.isArray(file.analysis_layers) ? file.analysis_layers.reduce((layerSum, layer) => layerSum + Number(layer.size || 0), 0) : 0), 0);
     const imageSource = file => {
       const mime = /^image\/(?:png|jpeg|webp)$/.test(String(file.mime_type || '')) ? file.mime_type : 'image/png';
       const b64 = String(file.data_base64 || '').replace(/[^A-Za-z0-9+/=]/g, '');
