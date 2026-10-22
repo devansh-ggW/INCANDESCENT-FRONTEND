@@ -5,7 +5,7 @@ on:
   push:
     branches:
       - main
-      - feature/desktop-app
+      - fix/desktop-no-webview2
     paths:
       - "desktop_app.py"
       - "server.py"
@@ -34,7 +34,7 @@ permissions:
 jobs:
   build-windows:
     runs-on: windows-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     steps:
       - name: Check out source
         uses: actions/checkout@v4
@@ -61,21 +61,28 @@ jobs:
           --icon incandescent.ico
           --add-data "index.html;."
           --add-data "incandescent.ico;."
-          --collect-all webview
-          --collect-all clr_loader
-          --collect-all pythonnet
+          --hidden-import server
+          --hidden-import run_incandescent
           desktop_app.py
 
-      - name: Verify executable was produced
+      - name: Verify bundled renderer files
         shell: pwsh
         run: |
           $exe = "dist/INCANDESCENT.exe"
           if (!(Test-Path $exe)) { throw "Build did not create $exe" }
           $item = Get-Item $exe
-          if ($item.Length -lt 1000000) { throw "Executable is unexpectedly small ($($item.Length) bytes)." }
+          if ($item.Length -lt 30000000) { throw "EXE looks too small to contain the renderer: $($item.Length) bytes." }
+          $archive = & pyi-archive_viewer -l -r $exe 2>&1 | Out-String
+          $archive | Set-Content -Encoding UTF8 dist/archive-list.txt
+          foreach ($name in @("QtWebEngineProcess.exe", "qtwebengine_resources.pak", "server", "run_incandescent", "msvcp140.dll", "vcruntime140.dll")) {
+            if ($archive -notmatch [regex]::Escape($name)) {
+              throw "Expected bundled runtime/module was not found in the EXE archive: $name"
+            }
+          }
           Write-Host "Built $($item.Name): $($item.Length) bytes"
+          Remove-Item dist/archive-list.txt
 
-      - name: Add quick-start note and archive
+      - name: Add quick-start note
         shell: pwsh
         run: |
           @'
@@ -84,13 +91,12 @@ jobs:
           1. Extract this archive.
           2. Make sure Ollama is installed, running, and your chosen model is installed.
           3. Double-click INCANDESCENT.exe.
-          4. The app defaults to qwen3.5:2b. Pick another installed model in Settings if needed.
-          5. If the app cannot open its window, install Microsoft Edge WebView2 Runtime and check:
-             %LOCALAPPDATA%\INCANDESCENT\desktop.log
+          4. The app defaults to qwen3.5:2b. Select another installed model in Settings if needed.
+          5. The renderer is bundled; a separate WebView2 install is not required.
+          6. If startup fails, check %LOCALAPPDATA%\INCANDESCENT\desktop.log.
 
-          Ollama and model weights are not included. No Python installation is needed.
+          Ollama and model weights are not included. Python is not required on the target PC.
           '@ | Set-Content -Encoding UTF8 dist/QUICK-START.txt
-          Compress-Archive -Path dist/INCANDESCENT.exe,dist/QUICK-START.txt -DestinationPath dist/INCANDESCENT-desktop-windows.zip -Force
 
       - name: Upload desktop build
         uses: actions/upload-artifact@v4
@@ -99,6 +105,5 @@ jobs:
           path: |
             dist/INCANDESCENT.exe
             dist/QUICK-START.txt
-            dist/INCANDESCENT-desktop-windows.zip
           if-no-files-found: error
           retention-days: 14
