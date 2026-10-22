@@ -74,7 +74,7 @@ jobs:
           if ($item.Length -lt 30000000) { throw "EXE looks too small to contain the renderer: $($item.Length) bytes." }
           $archive = & pyi-archive_viewer -l -r $exe 2>&1 | Out-String
           $archive | Set-Content -Encoding UTF8 dist/archive-list.txt
-          foreach ($name in @("QtWebEngineProcess.exe", "qtwebengine_resources.pak", "server", "run_incandescent")) {
+          foreach ($name in @("QtWebEngineProcess.exe", "qtwebengine_resources.pak", "server", "run_incandescent", "msvcp140.dll", "vcruntime140.dll")) {
             if ($archive -notmatch [regex]::Escape($name)) {
               throw "Expected bundled runtime/module was not found in the EXE archive: $name"
             }
@@ -82,7 +82,7 @@ jobs:
           Write-Host "Built $($item.Name): $($item.Length) bytes"
           Remove-Item dist/archive-list.txt
 
-      - name: Add quick-start note and archive
+      - name: Add quick-start note
         shell: pwsh
         run: |
           @'
@@ -97,7 +97,6 @@ jobs:
 
           Ollama and model weights are not included. Python is not required on the target PC.
           '@ | Set-Content -Encoding UTF8 dist/QUICK-START.txt
-          Compress-Archive -Path dist/INCANDESCENT.exe,dist/QUICK-START.txt -DestinationPath dist/INCANDESCENT-desktop-windows.zip -Force
 
       - name: Upload desktop build
         uses: actions/upload-artifact@v4
@@ -106,6 +105,5 @@ jobs:
           path: |
             dist/INCANDESCENT.exe
             dist/QUICK-START.txt
-            dist/INCANDESCENT-desktop-windows.zip
           if-no-files-found: error
           retention-days: 14

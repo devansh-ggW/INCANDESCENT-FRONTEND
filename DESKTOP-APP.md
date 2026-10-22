@@ -8,6 +8,8 @@ The app bundles Qt WebEngine (Chromium-based) inside its EXE. It does not requir
 
 The compatible Qt 5 WebEngine package uses an older Chromium baseline. The host restricts navigation to its loopback app, but this should not be used as a general-purpose browser or deployed to untrusted pages. A real smoke test on the target Windows build is required before claiming support for that exact OS build.
 
+The one-file EXE bundles the renderer and checks for the Visual C++ runtime DLLs needed by Qt WebEngine. The GitHub Actions artifact is a single ZIP with the EXE and quick-start note; it does not nest a second full-size ZIP inside.
+
 ## Build
 
 1. Install 64-bit Python 3.11 on the developer/build machine.
