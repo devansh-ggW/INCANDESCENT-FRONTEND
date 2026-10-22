@@ -389,7 +389,7 @@ def vision_model_for_request(preferred: str = "") -> Optional[str]:
 
 
 def normalize_attachments(raw: Any, conversation_id: str) -> Tuple[str, List[str], List[Dict[str, Any]]]:
-    """Validate the full batch first, then persist files and build model context.
+    """Validate the full batch first, then build model context.
 
     Two-phase handling means an invalid/oversized later file cannot leave earlier
     attachments half-imported. Image signatures are checked before forwarding data
@@ -526,7 +526,7 @@ def process_chat(payload: Dict[str, Any], conversation_id: str, event: threading
     answer = str(reply.get("content", "") or "").strip()
     if not answer:
         answer = "I was unable to produce a usable response. Try rephrasing the request or attaching a clearer image."
-    return {"ok": True, "conversation_id": conversation_id, "message": answer, "files": [], "attachments": attachment_metadata, "status": None, "checks_ok": None, "test_results": []}
+    return {"ok": True, "conversation_id": conversation_id, "message": answer, "attachments": attachment_metadata, "status": None, "checks_ok": None, "test_results": []}
 
 class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
