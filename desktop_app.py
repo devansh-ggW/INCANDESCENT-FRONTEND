@@ -72,7 +72,7 @@ def show_error(message: str) -> None:
 
 
 def make_server(backend):
-    """Bind locally, preferring port 8765 so existing local-origin data can persist."""
+    """Bind locally, preferring port 8765 for a stable app origin."""
     start = DEFAULT_PORT
     try:
         requested = int(os.environ.get("INCANDESCENT_PORT", str(DEFAULT_PORT)))
@@ -118,15 +118,13 @@ def main() -> int:
         show_error("The packaged desktop app is designed for Windows.")
         return 1
 
-    # The user installs and manages Ollama; this is the model default for the app.
+    # The user installs/manages Ollama. The desktop app defaults to Qwen 3.5 2B.
     os.environ.setdefault("INCANDESCENT_MODEL", DEFAULT_MODEL)
     os.environ["INCANDESCENT_HOST"] = HOST
-    # Help older integrated GPUs initialize the bundled Qt/Chromium renderer.
-    os.environ.setdefault("QTWEBENGINE_DISABLE_SANDBOX", "1")
 
     try:
         from PyQt5.QtCore import Qt, QUrl
-        from PyQt5.QtGui import QIcon
+        from PyQt5.QtGui import QDesktopServices, QIcon
         from PyQt5.QtWidgets import QApplication, QMainWindow
         from PyQt5.QtWebEngineWidgets import (
             QWebEnginePage,
@@ -148,15 +146,13 @@ def main() -> int:
     supervisor_stop = threading.Event()
     supervisor_thread = None
     try:
-        # Required by Qt WebEngine before QApplication is created.
         QApplication.setAttribute(Qt.AA_ShareOpenGLContexts)
         app = QApplication(sys.argv)
         app.setApplicationName(APP_TITLE)
         app.setOrganizationName(APP_TITLE)
         app.setQuitOnLastWindowClosed(True)
 
-        # These are explicit static module imports by name because PyInstaller
-        # otherwise cannot see the existing backend/supervisor import strings.
+        # Dynamic imports are explicitly included by the PyInstaller build flags.
         backend = importlib.import_module("server")
         backend.HOST = HOST
         httpd = make_server(backend)
@@ -191,13 +187,32 @@ def main() -> int:
         storage_dir.mkdir(parents=True, exist_ok=True)
         cache_dir.mkdir(parents=True, exist_ok=True)
 
-        # A named, persistent QWebEngine profile keeps IndexedDB/localStorage
-        # (including chat history and assistant profiles) across app launches.
+        # Named persistent profile keeps browser-side app data between sessions.
         profile = QWebEngineProfile(APP_TITLE, app)
         profile.setPersistentStoragePath(str(storage_dir))
         profile.setCachePath(str(cache_dir))
         profile.setHttpCacheType(QWebEngineProfile.DiskHttpCache)
         profile.setPersistentCookiesPolicy(QWebEngineProfile.ForcePersistentCookies)
+
+        class LocalOnlyPage(QWebEnginePage):
+            """Keep the bundled, older renderer on the local app UI only."""
+
+            def acceptNavigationRequest(self, target_url, navigation_type, is_main_frame):
+                local = (
+                    target_url.scheme().lower() in ("http", "https")
+                    and target_url.host().lower() == HOST
+                    and target_url.port() == port
+                )
+                if local:
+                    return True
+                # Links in model answers can open in the user's regular browser;
+                # redirects and embedded frames may not navigate the old engine away.
+                if (
+                    navigation_type == QWebEnginePage.NavigationTypeLinkClicked
+                    and target_url.scheme().lower() in ("http", "https")
+                ):
+                    QDesktopServices.openUrl(target_url)
+                return False
 
         window = QMainWindow()
         window.setWindowTitle(APP_TITLE)
@@ -208,7 +223,7 @@ def main() -> int:
             window.setWindowIcon(QIcon(str(icon)))
 
         view = QWebEngineView(window)
-        page = QWebEnginePage(profile, view)
+        page = LocalOnlyPage(profile, view)
         view.setPage(page)
         settings = view.settings()
         settings.setAttribute(QWebEngineSettings.JavascriptEnabled, True)
@@ -217,17 +232,15 @@ def main() -> int:
         view.load(QUrl(url))
         window.setCentralWidget(view)
 
-        logging.info("Starting embedded Qt WebEngine desktop window at %s", url)
+        logging.info("Starting bundled Qt WebEngine at %s", url)
         window.show()
-        return_code = app.exec_()
-        return int(return_code)
+        return int(app.exec_())
     except Exception as exc:
         logging.exception("INCANDESCENT desktop startup failed.")
         show_error(
-            "INCANDESCENT could not open its desktop window. This build uses its own "
-            "bundled renderer, so it does not require a separate WebView2 install.\n\n"
-            "Check that Windows has the required system runtime libraries and see "
-            "the diagnostic log:\n"
+            "INCANDESCENT could not open its desktop window. This build includes "
+            "its own renderer and does not require a separate WebView2 install.\n\n"
+            "Check the diagnostic log:\n"
             f"{data_dir / 'desktop.log'}\n\nDetails: {exc}"
         )
         return 1
