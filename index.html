@@ -1479,7 +1479,7 @@
     state.requests.set(conversationId, session);
     syncActiveRequestState();
     const assistantIndex = session.messages.length;
-    
+    session.messages.push({ role: 'assistant', content: '' });
     render();
     await persistRequestSession(session);
     let finalReceived = false;
@@ -2130,7 +2130,7 @@
     const attachmentMeta = attachmentDraft.map(item => ({ filename:item.filename, mime_type:item.mime_type, size:item.size }));
     session.messages.push({ role:'user', content:message || 'Please analyze the attached file(s).', attachments:attachmentMeta });
     const assistantIndex = session.messages.length;
-    
+    session.messages.push({ role: 'assistant', content: '' });
     session.controller = new AbortController();
     session.progress = 'Working on queued follow-up…';
     state.requests.set(conversationId, session);
@@ -2265,6 +2265,8 @@
   function cancelCurrentRequest() {
     const session = activeRequest();
     if (!session) return;
+    const queuedCount = session.queuedMessages.length;
+    session.queuedMessages.length = 0;
     fetch('/api/cancel', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -2272,6 +2274,8 @@
       keepalive: true
     }).catch(() => {});
     session.controller.abort();
+    persistRequestSession(session).catch(() => {});
+    showToast(queuedCount ? 'Response stopped; queued follow-ups cancelled.' : 'Response stopped');
   }
 
   function clearConversation() {
