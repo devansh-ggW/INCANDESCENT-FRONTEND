@@ -43,6 +43,16 @@ checks = {
     "backend system prompt describes text output": "does not write project files" in SERVER and "complete useful code" in SERVER,
     "image analysis routes through vision model": "vision_model_for_request(MODEL)" in SERVER and 'user_turn["images"] = images' in SERVER,
 }
+# Check static DOM ID integrity after repeated UI refactors. appToast is intentionally
+# created on demand by showToast(), rather than present in the initial HTML.
+html_ids = re.findall(r'\bid="([^"]+)"', HTML)
+static_id_refs = set(re.findall(r"\$\('([^']+)'\)", HTML))
+checks["static DOM IDs are unique"] = len(html_ids) == len(set(html_ids))
+checks["static element references resolve"] = not (static_id_refs - set(html_ids) - {"appToast"})
+checks["model preset uses chat-only rules"] = "Do not create files" in (ROOT / "Modelfile").read_text(encoding="utf-8")
+checks["legacy file-writing Tkinter agent is removed"] = not (ROOT / "incandescent_engine.py").exists()
+checks["API usage guide is removed"] = not (ROOT / "API_USAGE.md").exists()
+
 for label, passed in checks.items():
     check(passed, label)
 
