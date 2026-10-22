@@ -1,4 +1,4 @@
-"""Static regression checks for INCANDESCENT product UI and chat-only contract."""
+"""Static regression checks for INCANDESCENT product UI and chat-only behavior."""
 from __future__ import annotations
 
 import re
@@ -7,6 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 HTML = (ROOT / "index.html").read_text(encoding="utf-8")
 SERVER = (ROOT / "server.py").read_text(encoding="utf-8")
+MODELFILE = (ROOT / "Modelfile").read_text(encoding="utf-8")
 
 
 def check(condition: bool, message: str) -> None:
@@ -28,6 +29,8 @@ checks = {
     "send arrow is persistent": 'class="send-arrow"' in HTML and 'class="send-stop"' not in HTML,
     "separate stop control exists": 'id="stopButton"' in HTML and "stopButton.addEventListener('click', () => cancelCurrentRequest())" in HTML,
     "stop control only appears while responding": "stopButton.classList.toggle('visible', sending)" in HTML,
+    "stop clears queued follow-ups": "session.queuedMessages.length = 0;" in HTML,
+    "streaming turns create assistant placeholders": HTML.count("session.messages.push({ role: 'assistant', content: '' })") == 2,
     "whole response copy button exists": "data-copy-message" in HTML and "copy-response" in HTML,
     "code blocks retain one-click copy": "Copy code" in HTML and "bindCodeButtons(messagesEl)" in HTML,
     "file chooser supports source text and images, not ZIP imports": 'id="attachmentInput"' in HTML and ".png,.jpg,.jpeg,.webp" in HTML and ".zip" not in HTML,
@@ -40,36 +43,29 @@ checks = {
     "API key UI is removed": "apiKeyDialog" not in HTML and "generateApiKey" not in HTML and "data-api-ai" not in HTML,
     "ZIP upload UI is removed": "uploadProject" not in HTML and "queuedZipUploads" not in HTML and "/api/upload" not in HTML,
     "no experimental local workspace tagline": "Your local AI workspace" not in HTML and "Getting Incandescent ready" not in HTML,
+    "no upload-only state remains": "state.uploading" not in HTML and "Loading project…" not in HTML,
     "no API-key endpoint remains in backend": "/api/keys" not in SERVER and "v1/chat/completions" not in SERVER,
     "no generated-file service remains in backend": "/api/files/" not in SERVER and "create_artifact" not in SERVER and "def execute_tool" not in SERVER,
     "backend system prompt describes text output": "does not write project files" in SERVER and "complete useful code" in SERVER,
+    "backend has no generated-file response field": '"files": []' not in SERVER,
     "image analysis routes through vision model": "vision_model_for_request(MODEL)" in SERVER and 'user_turn["images"] = images' in SERVER,
+    "model preset uses chat-only rules": "Do not create files" in MODELFILE,
+    "legacy file-writing Tkinter agent is removed": not (ROOT / "incandescent_engine.py").exists(),
+    "obsolete API guide is removed": not (ROOT / "API_USAGE.md").exists(),
 }
-# Check static DOM ID integrity after repeated UI refactors. appToast is intentionally
-# created on demand by showToast(), rather than present in the initial HTML.
-html_ids = re.findall(r'\bid="([^"]+)"', HTML)
-static_id_refs = set(re.findall(r"\$\('([^']+)'\)", HTML))
-checks["static DOM IDs are unique"] = len(html_ids) == len(set(html_ids))
-checks["static element references resolve"] = not (static_id_refs - set(html_ids) - {"appToast"})
-checks["model preset uses chat-only rules"] = "Do not create files" in (ROOT / "Modelfile").read_text(encoding="utf-8")
-checks["legacy file-writing Tkinter agent is removed"] = not (ROOT / "incandescent_engine.py").exists()
-checks["API usage guide is removed"] = not (ROOT / "API_USAGE.md").exists()
 
-# Check static DOM ID integrity after repeated UI refactors. appToast is intentionally
-# created on demand by showToast(), rather than present in the initial HTML.
+# appToast is intentionally created on demand by showToast() rather than in the HTML.
 html_ids = re.findall(r'\bid="([^"]+)"', HTML)
 static_id_refs = set(re.findall(r"\$\('([^']+)'\)", HTML))
 checks["static DOM IDs are unique"] = len(html_ids) == len(set(html_ids))
 checks["static element references resolve"] = not (static_id_refs - set(html_ids) - {"appToast"})
-checks["model preset uses chat-only rules"] = "Do not create files" in (ROOT / "Modelfile").read_text(encoding="utf-8")
-checks["legacy file-writing Tkinter agent is removed"] = not (ROOT / "incandescent_engine.py").exists()
-checks["API usage guide is removed"] = not (ROOT / "API_USAGE.md").exists()
 
 for label, passed in checks.items():
     check(passed, label)
 
 print("PASS: professional chat UI, unique New Chat, and fully collapsible sidebar")
-print("PASS: stable send arrow, separate stop control, and copy buttons")
+print("PASS: stable send arrow, separate stop control, and queued-task cancellation")
+print("PASS: one-click response/code copying and safe custom assistant labels")
 print("PASS: source/image attachments with layered image preprocessing")
 print("PASS: no API-key interface, generated-file UI, or output endpoints")
-print("PASS: all static product-contract checks")
+print("PASS: static DOM integrity and current product-contract checks")
