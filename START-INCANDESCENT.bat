@@ -89,7 +89,7 @@ if "%BUILD_PHOTON%"=="1" (
     echo WARNING: Photon 1 could not be prepared. Falling back to qwen3:1.7b-q4_K_M.
     set "INCANDESCENT_MODEL=qwen3:1.7b-q4_K_M"
   ) else (
-    echo Photon 1 is ready.
+    echo Model configuration verified.
   )
 )
 rem Keep the service console visible so startup errors and request logs can be inspected.
