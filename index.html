@@ -975,24 +975,7 @@
     .catalog-add-button { margin-top:10px; }
     .catalog-add-button:hover,.catalog-remove-button:hover { background:#f3f3f4; }
     .catalog-remove-button { align-self:flex-start; }
-    .api-key-dialog { width:min(640px,calc(100vw - 28px)); }
-    .api-key-form { width:100%; }
-    .api-endpoint-panel { padding:13px; border:1px solid #e4e4e7; border-radius:10px; background:#fafafa; }
-    .api-endpoint-panel p,.api-key-reveal p { margin:8px 0 0; color:#656870; font-size:12px; line-height:1.5; }
-    .api-create-row,.api-secret-row,.api-key-row,.api-existing-heading { display:flex; align-items:center; justify-content:space-between; gap:10px; }
-    .api-create-row { margin:14px 0; }
-    #apiKeyStatus { color:#656870; font-size:12px; line-height:1.4; }
-    .api-key-reveal { margin:14px 0; padding:12px; border:1px solid #d9d9df; border-radius:10px; background:#f7f7f8; }
-    .api-secret-row .ai-input { flex:1; min-width:0; }
-    .api-existing-heading { margin:18px 0 8px; }
-    .api-existing-heading span,.api-key-meta span { color:#74767d; font-size:11px; }
-    .api-key-list { display:grid; gap:8px; max-height:230px; overflow:auto; }
-    .api-key-row { padding:10px; border:1px solid #e5e5e8; border-radius:9px; }
-    .api-key-meta { min-width:0; display:grid; gap:4px; }
-    .api-key-meta strong { color:#27282c; font-size:12px; }
-    .api-key-meta code { color:#6a6c72; font-size:10px; overflow-wrap:anywhere; }
-    .api-empty { margin:0; padding:13px; color:#777a80; font-size:12px; }
-    @media (max-width:760px) { .engine-meta {display:none!important}.topbar{padding:12px 14px}.page-nav{padding:0 14px}main{padding:22px 13px 16px!important}.starter-grid{grid-template-columns:1fr}.starter:last-child{grid-column:auto}.ai-catalog-row{flex-direction:column}.ai-catalog-fields{grid-template-columns:1fr;width:100%}.catalog-remove-button{align-self:flex-end}.api-create-row{align-items:flex-start;flex-direction:column}.api-key-row{align-items:flex-start}.api-secret-row{align-items:stretch} }
+    @media (max-width:760px) { .engine-meta {display:none!important}.topbar{padding:12px 14px}main{padding:22px 13px 16px!important}.starter-grid{grid-template-columns:1fr}.starter:last-child{grid-column:auto}.ai-catalog-row{flex-direction:column}.ai-catalog-fields{grid-template-columns:1fr;width:100%}.catalog-remove-button{align-self:flex-end} }
     @media (prefers-reduced-motion:reduce) { *,*::before,*::after {animation-duration:.01ms!important;transition-duration:.01ms!important} }
 
     /* Final workspace interaction rules */
@@ -1036,10 +1019,6 @@
         <div class="setting-row model-picker-row"><label for="modelSelect">AI model</label><select id="modelSelect" aria-label="Choose AI model"><option value="">Loading installed models…</option></select></div><p class="model-picker-status" id="modelPickerStatus" role="status">Checking installed models…</p>
       </section>
     </header>
-    <nav class="page-nav" aria-label="Application pages">
-      <button class="page-tab active" type="button" data-page="workspace">Workspace</button>
-      <button class="page-tab" type="button" data-page="artifacts">Artifacts</button>
-    </nav>
     <div class="app-layout">
     <aside class="sidebar" id="sidebar" aria-label="Conversation sidebar">
       <button class="sidebar-new create-ai-trigger" id="createAiButton" type="button"><span aria-hidden="true">＋</span> Create your AI</button>
@@ -1063,11 +1042,11 @@
           <h1>What will you build?</h1>
           <p>Ask questions, explore ideas, analyze images, or work through code. Your answers stay in the conversation, ready to copy.</p>
           <div class="starter-grid" aria-label="Example tasks">
-            <button class="starter" type="button" data-prompt="Build a polished responsive website for a small business. Use HTML, CSS, and JavaScript, include working interactions, and provide all files in a ZIP."><b>Build a website</b><span>Responsive UI with working interactions</span></button>
-            <button class="starter" type="button" data-prompt="Create a small Python desktop utility with a clean interface, sensible error handling, and a README with setup steps."><b>Create a Python app</b><span>A complete small desktop utility</span></button>
-            <button class="starter" type="button" data-prompt="Inspect the uploaded project, map its main files, identify the biggest bugs, and fix the highest-impact issues without breaking existing behavior."><b>Fix my project</b><span>Inspect, repair, then verify</span></button>
-            <button class="starter" type="button" data-prompt="Build a small REST API with input validation, clear errors, and a README showing how to run and test it locally."><b>Build an API</b><span>Endpoints, validation, and docs</span></button>
-            <button class="starter" type="button" data-prompt="Review the uploaded project structure, summarize how its main parts fit together, and suggest the next three improvements. Do not edit files yet."><b>Understand a codebase</b><span>Map files before making changes</span></button>
+            <button class="starter" type="button" data-prompt="Show me a polished responsive small-business website directly in chat using complete HTML, CSS, and JavaScript code blocks. Include working interactions and explain how to use the code."><b>Build a website</b><span>Responsive UI with working interactions</span></button>
+            <button class="starter" type="button" data-prompt="Write a complete, readable Python desktop utility example directly in chat, with a clean interface and sensible error handling."><b>Create a Python app</b><span>A complete small desktop utility</span></button>
+            <button class="starter" type="button" data-prompt="Inspect the uploaded source, map its main components, identify the biggest bugs, and explain precise fixes without changing or creating files."><b>Fix my project</b><span>Inspect, repair, then verify</span></button>
+            <button class="starter" type="button" data-prompt="Show a small REST API implementation in chat with input validation, clear errors, and code blocks for the required source."><b>Build an API</b><span>Endpoints, validation, and docs</span></button>
+            <button class="starter" type="button" data-prompt="Review the uploaded source structure, summarize how its parts fit together, and suggest the next three improvements. Keep the response in chat."><b>Understand a codebase</b><span>Map files before making changes</span></button>
           </div>
         </div>
         <div id="messages" class="messages" hidden></div>
@@ -1084,10 +1063,6 @@
           </div>
         </form>
       </div>
-      </section>
-      <section class="page" id="page-artifacts" data-page-view="artifacts">
-        <div class="page-heading"><div class="eyebrow">Verified project output</div><h2>Artifacts</h2><p>Files created for your projects appear here, ready to preview or download.</p></div>
-        <div id="artifactLibrary" class="artifact-library"><div class="empty-page">No verified artifacts yet.<br>Generated files will be collected here after a completed request.</div></div>
       </section>
     </main>
     </div>
@@ -1132,18 +1107,7 @@
       <div class="ai-builder-footer"><span id="aiBuilderStatus" role="status"></span><button class="dialog-secondary" id="aiBuilderCancel" type="button">Cancel</button><button class="dialog-secondary" id="aiBuilderSave" type="button">Save AI</button><button class="dialog-primary" id="aiBuilderSaveTest" type="button">Save &amp; test</button></div>
     </form>
   </dialog>
-  <dialog id="apiKeyDialog" class="personalization-dialog api-key-dialog" aria-labelledby="apiKeyTitle">
-    <form method="dialog" class="api-key-form" id="apiKeyForm">
-      <div class="dialog-head"><div><div class="eyebrow">Developer access</div><h2 id="apiKeyTitle">API access</h2></div><button class="dialog-close" id="apiKeyClose" type="button" aria-label="Close API access">×</button></div>
-      <p class="dialog-description">Create a persistent key for this AI. Keys have no app-imposed request quota. Keep them private and use them from a backend, not public website JavaScript.</p>
-      <div class="api-endpoint-panel"><label class="field-label" for="apiEndpoint">Chat completions endpoint</label><input class="ai-input" id="apiEndpoint" readonly value="/v1/chat/completions"><p>Your PC must be running Incandescent and reachable from the calling application. This does not create public hosting by itself.</p></div>
-      <div class="api-create-row"><button class="dialog-primary" id="generateApiKey" type="button">Generate API key</button><span id="apiKeyStatus" role="status"></span></div>
-      <div class="api-key-reveal" id="apiKeyReveal" hidden><label class="field-label" for="apiKeyValue">New key — copy it now</label><div class="api-secret-row"><input class="ai-input" id="apiKeyValue" readonly autocomplete="off" spellcheck="false"><button class="dialog-secondary" id="copyApiKey" type="button">Copy</button></div><p>This secret is shown only once. Incandescent stores a SHA-256 hash, not the raw key.</p></div>
-      <div class="api-existing-heading"><h3>Active keys</h3><span>Revoke any key at any time.</span></div>
-      <div id="apiKeyList" class="api-key-list"><p class="api-empty">Loading keys…</p></div>
-      <div class="dialog-footer"><span id="apiKeyFooterNote" role="status"></span><button class="dialog-secondary" id="apiKeyDone" type="button">Done</button></div>
-    </form>
-  </dialog>
+
   <script>
 (() => {
   'use strict';
@@ -1159,7 +1123,6 @@
     customAIs: [],
     conversationAiProfileId: null,
     editingAiProfileId: null,
-    apiProfileId: null,
     requests: new Map(),
     personalization: '',
     personalizationEnabled: true,
@@ -1373,7 +1336,6 @@
     renderChatHistory();
     renderAiProfiles();
     renderActiveAiBanner();
-    renderArtifacts();
     scrollToBottom(false);
   }
 
@@ -1475,16 +1437,17 @@
 
   async function sendMessage(text, attachmentOverride) {
     const message = String(text || '').trim();
-    const attachments = Array.isArray(attachmentOverride) ? attachmentOverride : state.pendingAttachments.slice();
+    const attachmentDraft = Array.isArray(attachmentOverride) ? attachmentOverride : state.pendingAttachments.slice();
+    const attachments = expandAnalysisAttachments(attachmentDraft);
     const conversationId = ensureConversationId();
     const runningSession = state.requests.get(conversationId);
-    if (!message && !attachments.length) {
+    if (!message && !attachmentDraft.length) {
       if (runningSession) cancelCurrentRequest();
       return;
     }
     if (state.uploading) { showToast('Wait until the current file import finishes.'); return; }
     if (runningSession) {
-      runningSession.queuedMessages.push({ text: message, attachments });
+      runningSession.queuedMessages.push({ text: message, attachments: attachmentDraft });
       state.pendingAttachments = [];
       input.value = '';
       input.style.height = 'auto';
@@ -1499,7 +1462,7 @@
     }
 
     state.autoScroll = true;
-    const attachmentMeta = attachments.map(item => ({ filename: item.filename, mime_type: item.mime_type, size: item.size }));
+    const attachmentMeta = attachmentDraft.map(item => ({ filename: item.filename, mime_type: item.mime_type, size: item.size }));
     addMessage('user', message || 'Please analyze the attached file(s).', { attachments: attachmentMeta });
     const history = historyPayload().slice(0, -1);
     state.pendingAttachments = [];
@@ -1606,113 +1569,7 @@
     }
   }
 
-  async function getFileContent(file) {
-    if (file.preview !== undefined) return String(file.preview);
-    if (!file.id) throw new Error('This artifact has no downloadable identifier.');
-    const result = await readResponse(await fetch('/api/files/' + encodeURIComponent(file.id) + '/preview', { headers: { Accept: 'text/plain' }, cache: 'no-store' }));
-    return String(result);
-  }
 
-  async function triggerDownload(file) {
-    if (!file || !file.id) throw new Error('This artifact is missing its download identifier.');
-    const response = await fetch('/api/files/' + encodeURIComponent(file.id), { cache: 'no-store' });
-    if (!response.ok) {
-      let detail = 'Download failed (' + response.status + ').';
-      try {
-        const body = await readResponse(response);
-        detail = typeof body === 'string' ? body : (body.error || body.message || detail);
-      } catch (_) { /* Keep the status-based message. */ }
-      throw new Error(detail);
-    }
-    const blob = await response.blob();
-    const objectUrl = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = objectUrl;
-    link.download = String(file.filename || 'download').split(/[\\/]/).pop() || 'download';
-    link.rel = 'noopener';
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
-  }
-
-  async function handleFileAction(action, messageIndex, fileIndex) {
-    const file = state.messages[messageIndex]?.files?.[fileIndex];
-    if (!file) return;
-    try {
-      if (action === 'download') { await triggerDownload(file); return; }
-      const content = await getFileContent(file);
-      if (action === 'copy') {
-        await copyText(content);
-        showToast('Copied ' + (file.filename || 'file'));
-      } else if (action === 'preview') {
-        const panel = messagesEl.querySelector('[data-preview="' + messageIndex + '-' + fileIndex + '"]');
-        if (!panel) return;
-        panel.querySelector('.preview-code').textContent = content;
-        const isHtml = /\.html?$/i.test(file.filename || '') || file.mime_type === 'text/html';
-        const frame = panel.querySelector('.html-preview');
-        if (frame) {
-          frame.hidden = !isHtml;
-          if (isHtml) frame.srcdoc = content;
-          else frame.removeAttribute('srcdoc');
-        }
-        panel.classList.add('open');
-        panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }
-    } catch (error) { showToast('Artifact action failed: ' + friendlyError(error)); }
-  }
-
-  function allFiles() {
-    const map = new Map();
-    state.uploadedFiles.forEach(file => map.set(file.filename, file));
-    state.messages.filter(item => item.role === 'assistant').forEach(item => {
-      (Array.isArray(item.files) ? item.files : []).forEach(file => map.set(file.filename, file));
-    });
-    return Array.from(map.values());
-  }
-
-  function renderArtifacts() {
-    const library = $('artifactLibrary');
-    if (!library) return;
-    const files = allFiles();
-    if (!files.length) {
-      library.innerHTML = '<div class="empty-page">No project files yet. Upload a project ZIP or ask Photon 1 to build something.</div>';
-      return;
-    }
-    library.innerHTML = files.map((file, index) => {
-      const label = [file.mime_type || fileType(file.filename, ''), formatSize(file.size)].filter(Boolean).join(' · ');
-      const canPreview = isTextFile(file);
-      return '<div class="library-entry"><div class="file-card"><div class="file-icon">' + escapeHtml(fileType(file.filename, file.mime_type)) + '</div><div class="file-info"><div class="file-name">' + escapeHtml(file.filename || 'Unnamed file') + '</div><div class="file-meta">' + escapeHtml(label) + '</div></div><div class="file-actions">' + (canPreview ? '<button type="button" data-lib-action="preview" data-library-index="' + index + '">Preview</button><button type="button" data-lib-action="copy" data-library-index="' + index + '">Copy</button>' : '') + '<button type="button" data-lib-action="download" data-library-index="' + index + '">Download</button></div></div><div class="preview-panel" data-library-preview="' + index + '"><div class="preview-head"><span>Preview · ' + escapeHtml(file.filename || 'file') + '</span><button type="button" data-lib-close>Close</button></div><pre class="preview-code">Loading preview…</pre><iframe class="html-preview" title="Isolated HTML project preview" sandbox="allow-scripts" hidden></iframe></div></div>';
-    }).join('');
-    library.querySelectorAll('[data-lib-action]').forEach(button => button.addEventListener('click', () => handleLibraryAction(button.dataset.libAction, Number(button.dataset.libraryIndex))));
-    library.querySelectorAll('[data-lib-close]').forEach(button => button.addEventListener('click', () => button.closest('.preview-panel')?.classList.remove('open')));
-  }
-
-  async function handleLibraryAction(action, index) {
-    const file = allFiles()[index];
-    if (!file) return;
-    try {
-      if (action === 'download') { await triggerDownload(file); return; }
-      const content = await getFileContent(file);
-      if (action === 'copy') {
-        await copyText(content);
-        showToast('Copied ' + (file.filename || 'file'));
-      } else if (action === 'preview') {
-        const panel = $('artifactLibrary').querySelector('[data-library-preview="' + index + '"]');
-        if (!panel) return;
-        panel.querySelector('.preview-code').textContent = content;
-        const isHtml = /\.html?$/i.test(file.filename || '') || file.mime_type === 'text/html';
-        const frame = panel.querySelector('.html-preview');
-        frame.hidden = !isHtml;
-        if (isHtml) frame.srcdoc = content;
-        else frame.removeAttribute('srcdoc');
-        panel.classList.add('open');
-        panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }
-    } catch (error) { showToast('Artifact action failed: ' + friendlyError(error)); }
-  }
-
-  function showPage(page) {
     document.querySelectorAll('[data-page-view]').forEach(view => view.classList.toggle('active', view.dataset.pageView === page));
     document.querySelectorAll('.page-tab').forEach(tab => tab.classList.toggle('active', tab.dataset.page === page));
     if (page === 'workspace') scrollToBottom(false);
@@ -1950,10 +1807,9 @@
       const purpose = profile.purpose || 'Personal assistant';
       return '<div class="ai-profile-row ' + (selected ? 'selected' : '') + '">' +
         '<button class="ai-profile-use" type="button" data-use-ai="' + escapeHtml(profile.id) + '" title="Start a chat with ' + escapeHtml(profile.name) + '"><strong>' + escapeHtml(profile.name) + '</strong><span>' + escapeHtml(purpose) + '</span></button>' +
-        '<div class="ai-profile-actions"><button type="button" data-api-ai="' + escapeHtml(profile.id) + '" title="API access for ' + escapeHtml(profile.name) + '" aria-label="API access for ' + escapeHtml(profile.name) + '">API</button><button type="button" data-edit-ai="' + escapeHtml(profile.id) + '" title="Edit ' + escapeHtml(profile.name) + '" aria-label="Edit ' + escapeHtml(profile.name) + '">✎</button><button type="button" data-delete-ai="' + escapeHtml(profile.id) + '" title="Delete ' + escapeHtml(profile.name) + '" aria-label="Delete ' + escapeHtml(profile.name) + '">×</button></div></div>';
+        '<div class="ai-profile-actions"><button type="button" data-edit-ai="' + escapeHtml(profile.id) + '" title="Edit ' + escapeHtml(profile.name) + '" aria-label="Edit ' + escapeHtml(profile.name) + '">✎</button><button type="button" data-delete-ai="' + escapeHtml(profile.id) + '" title="Delete ' + escapeHtml(profile.name) + '" aria-label="Delete ' + escapeHtml(profile.name) + '">×</button></div></div>';
     }).join('');
     list.querySelectorAll('[data-use-ai]').forEach(button => button.addEventListener('click', () => startAiConversation(button.dataset.useAi)));
-    list.querySelectorAll('[data-api-ai]').forEach(button => button.addEventListener('click', () => openApiKeyManager(button.dataset.apiAi)));
     list.querySelectorAll('[data-edit-ai]').forEach(button => button.addEventListener('click', () => openAiBuilder(button.dataset.editAi)));
     list.querySelectorAll('[data-delete-ai]').forEach(button => button.addEventListener('click', () => deleteAiProfile(button.dataset.deleteAi)));
   }
@@ -2040,62 +1896,7 @@
     }).filter(product => product.name).slice(0,200);
   }
 
-  async function syncAiProfileForApi(profile) {
-    const response = await fetch('/api/keys', {method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({action:'sync_profile',profile})});
-    if (!response.ok) throw new Error('Could not sync profile with the local API service.');
-    return readResponse(response);
-  }
 
-  async function openApiKeyManager(profileId) {
-    const profile = getAiProfile(profileId);
-    if (!profile) return;
-    state.apiProfileId = profile.id;
-    $('apiKeyTitle').textContent = 'API access · ' + profile.name;
-    $('apiKeyStatus').textContent = '';
-    $('apiKeyValue').value = '';
-    $('apiKeyReveal').hidden = true;
-    $('apiEndpoint').value = window.location.origin + '/v1/chat/completions';
-    $('apiKeyList').innerHTML = '<p class="api-empty">Loading keys…</p>';
-    $('apiKeyDialog').showModal();
-    await loadApiKeys();
-  }
-
-  async function loadApiKeys() {
-    if (!state.apiProfileId) return;
-    try {
-      const response = await readResponse(await fetch('/api/keys?profile_id=' + encodeURIComponent(state.apiProfileId), {headers:{Accept:'application/json'},cache:'no-store'}));
-      const keys = Array.isArray(response.keys) ? response.keys : [];
-      $('apiKeyList').innerHTML = keys.length ? keys.map(key => '<div class="api-key-row"><div class="api-key-meta"><strong>' + escapeHtml(key.name || 'API key') + '</strong><span>Created ' + escapeHtml(new Date(Number(key.created_at || Date.now())).toLocaleString()) + '</span><code>' + escapeHtml(key.prefix || 'inc_live_') + '…</code></div><button class="dialog-secondary api-revoke-button" type="button" data-revoke-api-key="' + escapeHtml(key.id) + '">Revoke</button></div>').join('') : '<p class="api-empty">No active keys for this AI yet.</p>';
-    } catch (_) { $('apiKeyList').innerHTML = '<p class="api-empty">Could not load API keys. Keep the Incandescent service running and try again.</p>'; }
-  }
-
-  async function generateApiKey() {
-    const profile = getAiProfile(state.apiProfileId);
-    if (!profile) { $('apiKeyStatus').textContent = 'Save the AI before creating a key.'; return; }
-    const button = $('generateApiKey');
-    button.disabled = true;
-    $('apiKeyStatus').textContent = 'Generating key…';
-    try {
-      const response = await readResponse(await fetch('/api/keys', {method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({action:'create',profile})}));
-      $('apiKeyValue').value = response.key || '';
-      $('apiKeyReveal').hidden = !response.key;
-      $('apiEndpoint').value = response.endpoint || (window.location.origin + '/v1/chat/completions');
-      $('apiKeyStatus').textContent = response.key ? 'Key generated. Copy and store it safely now.' : 'The service did not return a key.';
-      await loadApiKeys();
-    } catch (error) { $('apiKeyStatus').textContent = friendlyError(error); }
-    finally { button.disabled = false; }
-  }
-
-  async function revokeApiKey(keyId) {
-    if (!window.confirm('Revoke this key? Any integration using it will stop working.')) return;
-    try {
-      await readResponse(await fetch('/api/keys', {method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({action:'revoke',key_id:keyId})}));
-      $('apiKeyStatus').textContent = 'Key revoked.';
-      await loadApiKeys();
-    } catch (error) { $('apiKeyStatus').textContent = friendlyError(error); }
-  }
-
-  function createLocalId() {
     if (window.crypto && window.crypto.randomUUID) return window.crypto.randomUUID();
     const bytes = new Uint8Array(16);
     if (window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(bytes);
@@ -2113,7 +1914,6 @@
       state.customAIs.unshift(profile);
     }
     if (!await persistAiProfiles()) { $('aiBuilderStatus').textContent = 'Saving failed. Your changes are still in this session.'; return; }
-    syncAiProfileForApi(profile).catch(() => {});
     state.customAIs.sort((a,b) => Number(b.updatedAt || 0) - Number(a.updatedAt || 0));
     renderAiProfiles();
     $('aiBuilderDialog').close();
@@ -2341,8 +2141,9 @@
     if (!session || session.deleted || !next) return;
     const conversationId = session.conversationId;
     const message = String(next.text || '').trim();
-    const attachments = Array.isArray(next.attachments) ? next.attachments : [];
-    const attachmentMeta = attachments.map(item => ({ filename:item.filename, mime_type:item.mime_type, size:item.size }));
+    const attachmentDraft = Array.isArray(next.attachments) ? next.attachments : [];
+    const attachments = expandAnalysisAttachments(attachmentDraft);
+    const attachmentMeta = attachmentDraft.map(item => ({ filename:item.filename, mime_type:item.mime_type, size:item.size }));
     session.messages.push({ role:'user', content:message || 'Please analyze the attached file(s).', attachments:attachmentMeta });
     const assistantIndex = session.messages.length;
     session.messages.push({ role:'assistant', content:'', files:[] });
@@ -2601,13 +2402,8 @@
 
   document.querySelectorAll('.starter[data-prompt]').forEach(button => button.addEventListener('click', () => { input.value = button.dataset.prompt || ''; input.dispatchEvent(new Event('input')); input.focus(); }));
   document.querySelectorAll('.page-tab').forEach(tab => tab.addEventListener('click', () => showPage(tab.dataset.page)));
-  $('newConversation').addEventListener('click', clearConversation);
   $('sidebarNewChat').addEventListener('click', clearConversation);
   $('sidebarToggle').addEventListener('click', () => {
-    if (window.innerWidth <= 760) sidebar.classList.toggle('mobile-open');
-    else document.body.classList.toggle('sidebar-collapsed');
-  });
-  $('sidebarCollapse').addEventListener('click', () => {
     if (window.innerWidth <= 760) sidebar.classList.toggle('mobile-open');
     else document.body.classList.toggle('sidebar-collapsed');
   });
@@ -2624,11 +2420,6 @@
   });
   $('aiCatalogList').addEventListener('click', event => { const button = event.target.closest('[data-remove-catalog]'); if (button) button.closest('[data-catalog-row]').remove(); });
   $('aiBuilderForm').addEventListener('submit', event => event.preventDefault());
-  $('apiKeyClose').addEventListener('click', () => { $('apiKeyValue').value = ''; $('apiKeyReveal').hidden = true; $('apiKeyDialog').close(); });
-  $('apiKeyDone').addEventListener('click', () => { $('apiKeyValue').value = ''; $('apiKeyReveal').hidden = true; $('apiKeyDialog').close(); });
-  $('generateApiKey').addEventListener('click', generateApiKey);
-  $('copyApiKey').addEventListener('click', async () => { const key = $('apiKeyValue').value; if (!key) return; try { await navigator.clipboard.writeText(key); $('apiKeyStatus').textContent = 'Key copied.'; } catch (_) { $('apiKeyValue').focus(); $('apiKeyValue').select(); $('apiKeyStatus').textContent = 'Press Ctrl+C to copy the selected key.'; } });
-  $('apiKeyList').addEventListener('click', event => { const button = event.target.closest('[data-revoke-api-key]'); if (button) revokeApiKey(button.dataset.revokeApiKey); });
   $('switchDefaultAi').addEventListener('click', async () => {
     await persistActiveChat();
     state.conversationId = null;
@@ -2652,9 +2443,7 @@
   $('personalizationClose').addEventListener('click', () => $('personalizationDialog').close());
   $('savePersonalization').addEventListener('click', async () => { await savePersonalization(); });
   $('clearPersonalization').addEventListener('click', async () => { $('personalizationText').value = ''; $('personalizationEnabled').checked = false; await savePersonalization(); });
-  sendButton.addEventListener('click', event => {
-    if (state.sending && !(input.value.trim() || state.pendingAttachments.length)) { event.preventDefault(); cancelCurrentRequest(); }
-  });
+  stopButton.addEventListener('click', () => cancelCurrentRequest());
   uploadButton.addEventListener('click', () => attachmentInput.click());
   attachmentInput.addEventListener('change', () => { handleSelectedFiles(attachmentInput.files).catch(error => showToast(friendlyError(error))); });
   const composerNode = $('composer');
