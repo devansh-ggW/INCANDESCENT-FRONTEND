@@ -57,6 +57,15 @@ MAX_MODEL_RESPONSE_BYTES = 6_000_000
 MAX_USER_MESSAGE_CHARS = 7_000
 MAX_CONVERSATION_CHARS = 4_000
 MAX_HISTORY_MESSAGES = 8
+MAX_ONE_ATTACHMENT_BYTES = 1_500_000
+MAX_ALL_ATTACHMENTS_BYTES = 3_500_000
+MAX_ATTACHMENT_TEXT_CHARS = 12_000
+TEXT_ATTACHMENT_EXTS = frozenset({
+    "txt", "html", "htm", "css", "scss", "js", "mjs", "cjs", "ts", "tsx", "jsx",
+    "json", "md", "py", "xml", "svg", "yml", "yaml", "toml", "ini", "cfg", "conf",
+    "sh", "bat", "ps1", "sql", "java", "go", "rs", "c", "h", "cpp", "hpp", "php",
+    "rb", "vue", "svelte", "astro", "gitignore", "editorconfig"
+})
 OLLAMA_TIMEOUT_SECONDS = 180
 
 LOCK = threading.RLock()
@@ -564,8 +573,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def send_json(self, status: int, payload: Dict[str, Any]) -> None:
         path = urllib.parse.urlsplit(self.path).path
-        extra = {"Access-Control-Allow-Origin": "*", "Vary": "Origin"} if path == "" else None
-        self.send_bytes(status, json_bytes(payload), extra_headers=extra)
+        self.send_bytes(status, json_bytes(payload))
 
     def read_json(self) -> Dict[str, Any]:
         length = int(self.headers.get("Content-Length", "0") or 0)
@@ -715,9 +723,9 @@ def main() -> None:
         return
     server.daemon_threads = True
     print("=" * 60)
-    print("INCANDESCENT is ready.")
+    print("INCANDESCENT service started.")
     print("Use the application window opened by the launcher.")
-    print("Keep this window open while using the application. Press Ctrl+C to close.")
+    print("Keep this window open while using the application. Press Ctrl+C to exit.")
     print("=" * 60)
     try:
         server.serve_forever(poll_interval=0.25)
