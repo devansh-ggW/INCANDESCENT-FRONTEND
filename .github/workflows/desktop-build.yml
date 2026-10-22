@@ -1,0 +1,104 @@
+name: Build INCANDESCENT desktop app
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - feature/desktop-app
+    paths:
+      - "desktop_app.py"
+      - "server.py"
+      - "run_incandescent.py"
+      - "index.html"
+      - "incandescent.ico"
+      - "requirements-desktop.txt"
+      - "build_desktop.bat"
+      - "DESKTOP-APP.md"
+      - ".github/workflows/desktop-build.yml"
+  pull_request:
+    paths:
+      - "desktop_app.py"
+      - "server.py"
+      - "run_incandescent.py"
+      - "index.html"
+      - "incandescent.ico"
+      - "requirements-desktop.txt"
+      - "build_desktop.bat"
+      - "DESKTOP-APP.md"
+      - ".github/workflows/desktop-build.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          architecture: "x64"
+          cache: pip
+          cache-dependency-path: requirements-desktop.txt
+
+      - name: Install desktop build dependencies
+        run: python -m pip install --upgrade pip && python -m pip install -r requirements-desktop.txt
+
+      - name: Validate Python source
+        run: python -m py_compile desktop_app.py server.py run_incandescent.py
+
+      - name: Build one-file Windows executable
+        shell: cmd
+        run: >-
+          python -m PyInstaller --noconfirm --clean --onefile --windowed
+          --name INCANDESCENT
+          --icon incandescent.ico
+          --add-data "index.html;."
+          --add-data "incandescent.ico;."
+          --collect-all webview
+          --collect-all clr_loader
+          --collect-all pythonnet
+          desktop_app.py
+
+      - name: Verify executable was produced
+        shell: pwsh
+        run: |
+          $exe = "dist/INCANDESCENT.exe"
+          if (!(Test-Path $exe)) { throw "Build did not create $exe" }
+          $item = Get-Item $exe
+          if ($item.Length -lt 1000000) { throw "Executable is unexpectedly small ($($item.Length) bytes)." }
+          Write-Host "Built $($item.Name): $($item.Length) bytes"
+
+      - name: Add quick-start note and archive
+        shell: pwsh
+        run: |
+          @'
+          INCANDESCENT DESKTOP
+          ====================
+          1. Extract this archive.
+          2. Make sure Ollama is installed, running, and your chosen model is installed.
+          3. Double-click INCANDESCENT.exe.
+          4. The app defaults to qwen3.5:2b. Pick another installed model in Settings if needed.
+          5. If the app cannot open its window, install Microsoft Edge WebView2 Runtime and check:
+             %LOCALAPPDATA%\INCANDESCENT\desktop.log
+
+          Ollama and model weights are not included. No Python installation is needed.
+          '@ | Set-Content -Encoding UTF8 dist/QUICK-START.txt
+          Compress-Archive -Path dist/INCANDESCENT.exe,dist/QUICK-START.txt -DestinationPath dist/INCANDESCENT-desktop-windows.zip -Force
+
+      - name: Upload desktop build
+        uses: actions/upload-artifact@v4
+        with:
+          name: INCANDESCENT-desktop-windows
+          path: |
+            dist/INCANDESCENT.exe
+            dist/QUICK-START.txt
+            dist/INCANDESCENT-desktop-windows.zip
+          if-no-files-found: error
+          retention-days: 14
