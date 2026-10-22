@@ -1569,6 +1569,7 @@
   }
 
 
+  function showPage(page) {
     document.querySelectorAll('[data-page-view]').forEach(view => view.classList.toggle('active', view.dataset.pageView === page));
     document.querySelectorAll('.page-tab').forEach(tab => tab.classList.toggle('active', tab.dataset.page === page));
     if (page === 'workspace') scrollToBottom(false);
