@@ -1503,15 +1503,13 @@
           if (data.error && !data.cancelled) session.progress = 'Request failed';
         } else {
           session.messages[assistantIndex].content = String(data.message || session.messages[assistantIndex].content || 'Done.');
-                    if (Array.isArray(data.attachments) && data.attachments.length) {
+          if (Array.isArray(data.attachments) && data.attachments.length) {
             session.messages[assistantIndex].analyzedAttachments = data.attachments.map(item => ({ filename:item.filename, kind:item.kind }));
           }
           if (data.status) session.messages.push({ role: 'notice', content: data.status, success: data.checks_ok === true });
           if (Array.isArray(data.test_results) && data.test_results.length) {
             session.messages.push({ role: 'notice', content: 'Checks: ' + data.test_results.join(' · '), success: data.checks_ok === true });
           }
-          // Keep the session-owned arrays stable when the user switches to another chat.
-          session.uploadedFiles = session.uploadedFiles || [];
         }
         if (state.conversationId === session.conversationId) render();
         schedulePersistRequestSession(session);
@@ -2161,7 +2159,7 @@
           if (data.cancelled) session.messages[assistantIndex].content = 'Request cancelled.';
         } else {
           session.messages[assistantIndex].content = String(data.message || session.messages[assistantIndex].content || 'Done.');
-                    if (Array.isArray(data.attachments) && data.attachments.length) session.messages[assistantIndex].analyzedAttachments = data.attachments.map(item => ({ filename:item.filename, kind:item.kind }));
+          if (Array.isArray(data.attachments) && data.attachments.length) session.messages[assistantIndex].analyzedAttachments = data.attachments.map(item => ({ filename:item.filename, kind:item.kind }));
           if (data.status) session.messages.push({ role:'notice', content:data.status, success:data.checks_ok === true });
           if (Array.isArray(data.test_results) && data.test_results.length) session.messages.push({ role:'notice', content:'Checks: ' + data.test_results.join(' · '), success:data.checks_ok === true });
         }
