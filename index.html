@@ -1058,8 +1058,8 @@
           <div class="pending-attachments" id="pendingAttachments" aria-live="polite" hidden></div>
           <div class="composer-footer">
             <span class="hint" id="composerHint">Drop an image or source files · Enter to send · Shift+Enter for a new line</span>
-            <input id="attachmentInput" type="file" multiple accept=".txt,.zip,.html,.htm,.css,.scss,.js,.mjs,.cjs,.ts,.tsx,.jsx,.json,.md,.py,.xml,.svg,.yml,.yaml,.toml,.ini,.cfg,.conf,.sh,.bat,.ps1,.sql,.java,.go,.rs,.c,.h,.cpp,.hpp,.php,.rb,.vue,.svelte,.astro,.gitignore,.editorconfig,.png,.jpg,.jpeg,.webp" hidden>
-            <div class="composer-actions"><button class="utility-btn attach-btn" id="uploadButton" type="button" title="Attach an image, text, or source code"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="m8.5 12.5 6.2-6.2a3.2 3.2 0 0 1 4.5 4.5l-8.5 8.5a5 5 0 0 1-7.1-7.1l8.5-8.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Attach files</span></button><button class="utility-btn mic-btn" id="micButton" type="button" aria-label="Start speech to text" title="Speech to text"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3m-4 0h8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button><button class="stop-generation" id="stopButton" type="button" aria-label="Stop response" title="Stop response" aria-hidden="true" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/></svg></button><button class="send" id="sendButton" type="submit" aria-label="Send message" title="Send message"><svg class="send-arrow" viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><path d="M12 19V5M6.5 10.5 12 5l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+            <input id="attachmentInput" type="file" multiple accept=".txt,.html,.htm,.css,.scss,.js,.mjs,.cjs,.ts,.tsx,.jsx,.json,.md,.py,.xml,.svg,.yml,.yaml,.toml,.ini,.cfg,.conf,.sh,.bat,.ps1,.sql,.java,.go,.rs,.c,.h,.cpp,.hpp,.php,.rb,.vue,.svelte,.astro,.gitignore,.editorconfig,.png,.jpg,.jpeg,.webp" hidden>
+            <div class="composer-actions"><button class="utility-btn attach-btn" id="uploadButton" type="button" title="Attach an image, text, or source code"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="m8.5 12.5 6.2-6.2a3.2 3.2 0 0 1 4.5 4.5l-8.5 8.5a5 5 0 0 1-7.1-7.1l8.5-8.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Attach</span></button><button class="utility-btn mic-btn" id="micButton" type="button" aria-label="Start speech to text" title="Speech to text"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3m-4 0h8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button><button class="stop-generation" id="stopButton" type="button" aria-label="Stop response" title="Stop response" aria-hidden="true" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/></svg></button><button class="send" id="sendButton" type="submit" aria-label="Send message" title="Send message"><svg class="send-arrow" viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><path d="M12 19V5M6.5 10.5 12 5l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
           </div>
         </form>
       </div>
@@ -1118,7 +1118,6 @@
     uploadedFiles: [],
     pendingAttachments: [],
     queuedMessages: [],
-    queuedZipUploads: [],
     chatHistory: [],
     customAIs: [],
     conversationAiProfileId: null,
@@ -2000,12 +1999,12 @@
           : '<svg viewBox="0 0 24 24"><path d="M8 4.5h8l4 4v11H4v-15zM16 4.5v4h4M8 12h8M8 15h6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>') + '</div>';
       const typeLabel = kind === 'image' ? 'IMAGE' : (kind === 'archive' ? 'PROJECT ZIP' : (ext || 'SOURCE'));
       return '<article class="attachment-card attachment-' + kind + '">' + preview +
-        '<div class="attachment-detail"><div class="attachment-topline"><span class="attachment-kind">' + escapeHtml(typeLabel) + '</span><span class="attachment-ready"><i aria-hidden="true"></i> Ready</span></div>' +
+        '<div class="attachment-detail"><div class="attachment-topline"><span class="attachment-kind">' + escapeHtml(typeLabel) + '</span><span class="attachment-ready"><i aria-hidden="true"></i> Added</span></div>' +
         '<div class="attachment-name" title="' + escapeHtml(name) + '">' + escapeHtml(name) + '</div>' +
         '<div class="attachment-meta">' + formatSize(file.size) + (kind === 'image' ? ' · image preview' : kind === 'archive' ? ' · project archive' : ' · source file') + '</div></div>' +
         '<button class="attachment-remove" type="button" data-remove-attachment="' + index + '" aria-label="Remove ' + escapeHtml(name) + '" title="Remove file"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button></article>';
     }).join('');
-    pendingAttachmentEl.innerHTML = '<div class="attachment-heading"><div class="attachment-heading-copy"><span class="attachment-heading-title">Ready to attach</span><span class="attachment-heading-meta">' + state.pendingAttachments.length + (state.pendingAttachments.length === 1 ? ' file' : ' files') + ' · ' + formatSize(totalSize) + '</span></div><button type="button" class="attachment-clear" id="clearPendingAttachments">Clear all</button></div><div class="attachment-grid">' + cards + '</div><div class="attachment-footnote"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5 20 7v5.5c0 4.3-3 6.8-8 8-5-1.2-8-3.7-8-8V7zM8.5 12l2.2 2.2 4.8-4.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Files are checked before they are sent for analysis.</span></div>';
+    pendingAttachmentEl.innerHTML = '<div class="attachment-heading"><div class="attachment-heading-copy"><span class="attachment-heading-title">Attachments</span><span class="attachment-heading-meta">' + state.pendingAttachments.length + (state.pendingAttachments.length === 1 ? ' file' : ' files') + ' · ' + formatSize(totalSize) + '</span></div><button type="button" class="attachment-clear" id="clearPendingAttachments">Clear all</button></div><div class="attachment-grid">' + cards + '</div><div class="attachment-footnote"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5 20 7v5.5c0 4.3-3 6.8-8 8-5-1.2-8-3.7-8-8V7zM8.5 12l2.2 2.2 4.8-4.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Attachments are prepared for analysis.</span></div>';
     pendingAttachmentEl.querySelectorAll('[data-remove-attachment]').forEach(button => button.addEventListener('click', () => {
       const index = Number(button.dataset.removeAttachment);
       if (Number.isInteger(index) && index >= 0 && index < state.pendingAttachments.length) state.pendingAttachments.splice(index, 1);
@@ -2099,11 +2098,9 @@
   async function handleSelectedFiles(files) {
     const list = Array.from(files || []);
     if (!list.length) return;
-    let zipped = [];
     let accepted = 0;
     for (const file of list) {
       const ext = fileExt(file.name);
-      if (ext === 'zip') { zipped.push(file); continue; }
       const expectedImageMime = IMAGE_EXTS.has(ext) ? 'image/' + (ext === 'jpg' ? 'jpeg' : ext) : '';
       const mime = expectedImageMime ? (file.type === expectedImageMime ? file.type : expectedImageMime) : (file.type && (file.type.startsWith('text/') || file.type === 'application/json') ? file.type : 'text/plain');
       if (!TEXT_EXTS.has(ext) && !IMAGE_EXTS.has(ext)) { showToast('Unsupported file: ' + file.name); continue; }
@@ -2126,15 +2123,6 @@
       accepted++;
     }
     renderPendingAttachments(); updateSendButton();
-    // The attachment tray itself confirms readiness; avoid a toast obscuring the send controls on mobile.
-    if (zipped.length) {
-      if (state.sending || state.uploading) {
-        state.queuedZipUploads.push(...zipped);
-        showToast(zipped.length + ' ZIP import(s) queued until the current task finishes');
-      } else {
-        for (const zip of zipped) await uploadProject(zip);
-      }
-    }
   }
 
   async function runQueuedTurnInBackground(session, next) {
@@ -2309,41 +2297,6 @@
     input.focus();
   }
 
-  async function uploadProject(file) {
-    if (!file) return;
-    if (state.sending || state.uploading) { showToast('Wait for the current request before importing a ZIP.'); return; }
-    if (!/\.zip$/i.test(file.name || '')) { showToast('Choose a .zip project archive.'); return; }
-    if (file.size > 12 * 1024 * 1024) { showToast('Project ZIPs are limited to 12 MB. Remove build output and dependencies first.'); return; }
-    const conversationId = ensureConversationId();
-    state.uploading = true;
-    state.progress = 'Reading project files…';
-    render();
-    try {
-      const response = await fetch('/api/upload?conversation_id=' + encodeURIComponent(conversationId), {
-        method: 'POST', headers: { 'Content-Type': 'application/zip', Accept: 'application/json' }, body: file
-      });
-      const data = await readResponse(response);
-      if (data.ok !== true) throw new Error(data.error || 'Project import failed.');
-      state.conversationId = data.conversation_id || conversationId;
-      const merged = new Map(state.uploadedFiles.map(item => [item.filename, item]));
-      (Array.isArray(data.files) ? data.files : []).forEach(item => merged.set(item.filename, item));
-      state.uploadedFiles = Array.from(merged.values());
-      state.messages.push({ role: 'assistant', content: data.message + '. The project files are loaded into this chat. Tell me what to build, inspect, or fix.' });
-      persistActiveChat();
-      showPage('workspace');
-      showToast('Project loaded · ' + (data.imported_count || 0) + ' files');
-    } catch (error) {
-      addMessage('notice', 'Could not import project: ' + friendlyError(error));
-    } finally {
-      state.uploading = false;
-      state.progress = '';
-      attachmentInput.value = '';
-      render();
-      input.focus();
-      processNextQueuedAction();
-    }
-  }
-
   async function loadInstalledModels(keepSelection = true) {
     const select = $('modelSelect');
     const note = $('modelPickerStatus');
@@ -2365,11 +2318,11 @@
       }
       const selected = models.some(model => model.name === previous) ? previous : (data.selected || '');
       if (selected && Array.from(select.options).some(option => option.value === selected)) select.value = selected;
-      note.textContent = 'Choose an installed model. Changing it affects new replies; wait for any active reply to finish first.';
+      note.textContent = 'Select the model for new replies. Wait for an active reply to finish before switching.';
       note.className = 'model-picker-status';
     } catch (error) {
       select.replaceChildren(new Option('Could not load models', ''));
-      note.textContent = 'Could not load installed models. Restart Incandescent and refresh this list by reopening the app.';
+      note.textContent = 'Could not load model choices. Reopen settings and try again.';
       note.className = 'model-picker-status error';
     }
   }
@@ -2377,7 +2330,7 @@
   async function checkStatus() {
     try {
       const data = await readResponse(await fetch('/api/status', { headers: { Accept: 'application/json' }, cache: 'no-store' }));
-      if (data.ollama_connected) setStatus('online', 'Ready');
+      if (data.ollama_connected) setStatus('online', 'Available');
       else setStatus('offline', 'Assistant unavailable');
       const select = $('modelSelect');
       if (select && data.model && Array.from(select.options).some(option => option.value === data.model) && select.value !== data.model) select.value = data.model;
