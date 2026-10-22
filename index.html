@@ -995,6 +995,23 @@
     @media (max-width:760px) { .engine-meta {display:none!important}.topbar{padding:12px 14px}.page-nav{padding:0 14px}main{padding:22px 13px 16px!important}.starter-grid{grid-template-columns:1fr}.starter:last-child{grid-column:auto}.ai-catalog-row{flex-direction:column}.ai-catalog-fields{grid-template-columns:1fr;width:100%}.catalog-remove-button{align-self:flex-end}.api-create-row{align-items:flex-start;flex-direction:column}.api-key-row{align-items:flex-start}.api-secret-row{align-items:stretch} }
     @media (prefers-reduced-motion:reduce) { *,*::before,*::after {animation-duration:.01ms!important;transition-duration:.01ms!important} }
 
+    /* Final workspace interaction rules */
+    .sidebar-toggle { display:grid !important; }
+    .sidebar-collapsed .sidebar { display:none !important; width:0 !important; min-width:0 !important; flex:0 0 0 !important; padding:0 !important; border:0 !important; overflow:hidden !important; }
+    .sidebar-collapsed #mainContent { width:100% !important; max-width:none !important; flex:1 1 auto !important; }
+    .create-ai-trigger { width:max-content !important; min-width:0 !important; min-height:30px !important; height:30px !important; align-self:flex-start !important; padding:0 11px !important; margin:2px 0 5px !important; border-radius:8px !important; font-size:11px !important; font-weight:650 !important; box-shadow:none !important; }
+    #sidebarNewChat { width:100%; min-height:36px; flex:0 0 auto; justify-content:flex-start; }
+    .stop-generation { display:none; width:36px; height:36px; flex:0 0 36px; place-items:center; border:1px solid #d7d9df; border-radius:9px; background:#fff; color:#25272d; cursor:pointer; }
+    .stop-generation.visible { display:grid; }
+    .stop-generation:disabled { opacity:.4; cursor:default; }
+    .stop-generation:hover:not(:disabled) { background:#f1f2f4; border-color:#b7bbc4; }
+    .stop-generation svg { display:block; width:16px; height:16px; }
+    .composer-actions { align-items:center; }
+    .message-actions { display:flex; gap:8px; margin-top:8px; }
+    .copy-response { display:inline-flex; align-items:center; gap:6px; min-height:27px; padding:4px 8px; border:1px solid #e0e2e7; border-radius:7px; background:#fff; color:#646a75; font-size:11px; cursor:pointer; }
+    .copy-response:hover { background:#f6f6f7; color:#202123; border-color:#c6c9d0; }
+    .copy-response svg { width:13px; height:13px; }
+    @media (max-width:760px) { .sidebar-toggle {display:grid!important} .copy-response {min-height:30px} }
   </style>
 </head>
 <body>
@@ -1002,14 +1019,13 @@
     <header class="topbar">
       <div class="brand" aria-label="INCANDESCENT home">
         <div class="mark" aria-hidden="true"><img src="/incandescent.ico?v=6" alt=""></div>
-        <div class="brand-copy"><div class="wordmark">INCANDESCENT</div><div class="tagline">Your local AI workspace</div></div>
+        <div class="brand-copy"><div class="wordmark">INCANDESCENT</div></div>
       </div>
       <div class="engine-meta" aria-live="polite">
-        <div class="status"><span id="statusDot" class="status-dot checking"></span><span id="statusText">Getting Incandescent ready…</span></div>
+        <div class="status"><span id="statusDot" class="status-dot checking"></span><span id="statusText">Checking availability…</span></div>
       </div>
       <div class="actions">
-        <button class="icon-btn sidebar-toggle" id="sidebarToggle" type="button" aria-label="Open chat history" title="Open chat history"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 6.5h16M4 12h16M4 17.5h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
-        <button class="new-btn" id="newConversation" type="button"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg><span>New chat</span></button>
+        <button class="icon-btn sidebar-toggle" id="sidebarToggle" type="button" aria-label="Toggle sidebar" title="Toggle sidebar"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 6.5h16M4 12h16M4 17.5h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
         <button class="icon-btn" id="settingsButton" type="button" aria-label="Open settings" title="Settings" aria-expanded="false"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 7h9m4 0h3M4 17h3m4 0h9M13 4v6M9 14v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
       </div>
       <section class="settings" id="settingsPanel" aria-label="Interface settings">
@@ -1026,11 +1042,8 @@
     </nav>
     <div class="app-layout">
     <aside class="sidebar" id="sidebar" aria-label="Conversation sidebar">
-      <div class="sidebar-top">
-        <button class="sidebar-new" id="sidebarNewChat" type="button"><span aria-hidden="true">＋</span> New chat</button>
-        <button class="sidebar-collapse" id="sidebarCollapse" type="button" aria-label="Collapse sidebar" title="Collapse sidebar">‹</button>
-      </div>
       <button class="sidebar-new create-ai-trigger" id="createAiButton" type="button"><span aria-hidden="true">＋</span> Create your AI</button>
+      <button class="sidebar-new" id="sidebarNewChat" type="button"><span aria-hidden="true">＋</span> New chat</button>
       <label class="sidebar-search-label" for="chatSearch">Your conversations</label>
       <input class="sidebar-search" id="chatSearch" type="search" placeholder="Search chats" autocomplete="off">
       <div class="chat-history" id="chatHistory" aria-live="polite"><div class="history-empty">Your chats will appear here.</div></div>
@@ -1048,7 +1061,7 @@
         <div id="welcome" class="welcome">
           <div class="eyebrow">Your coding partner</div>
           <h1>What will you build?</h1>
-          <p>Describe a software project, debug a codebase, or ask for an implementation plan. INCANDESCENT will return its response and any verified generated files here.</p>
+          <p>Ask questions, explore ideas, analyze images, or work through code. Your answers stay in the conversation, ready to copy.</p>
           <div class="starter-grid" aria-label="Example tasks">
             <button class="starter" type="button" data-prompt="Build a polished responsive website for a small business. Use HTML, CSS, and JavaScript, include working interactions, and provide all files in a ZIP."><b>Build a website</b><span>Responsive UI with working interactions</span></button>
             <button class="starter" type="button" data-prompt="Create a small Python desktop utility with a clean interface, sensible error handling, and a README with setup steps."><b>Create a Python app</b><span>A complete small desktop utility</span></button>
@@ -1062,12 +1075,12 @@
       <div class="composer-wrap">
         <form class="composer" id="composer">
           <label class="sr-only" for="messageInput">Describe what you want to build</label>
-          <textarea id="messageInput" rows="3" placeholder="Describe a software project or engineering task…"></textarea>
+          <textarea id="messageInput" rows="3" placeholder="Ask a question, analyze an image, or write code…"></textarea>
           <div class="pending-attachments" id="pendingAttachments" aria-live="polite" hidden></div>
           <div class="composer-footer">
-            <span class="hint" id="composerHint">Drop files here · Enter to send · Shift+Enter for a new line</span>
+            <span class="hint" id="composerHint">Drop an image or source files · Enter to send · Shift+Enter for a new line</span>
             <input id="attachmentInput" type="file" multiple accept=".txt,.zip,.html,.htm,.css,.scss,.js,.mjs,.cjs,.ts,.tsx,.jsx,.json,.md,.py,.xml,.svg,.yml,.yaml,.toml,.ini,.cfg,.conf,.sh,.bat,.ps1,.sql,.java,.go,.rs,.c,.h,.cpp,.hpp,.php,.rb,.vue,.svelte,.astro,.gitignore,.editorconfig,.png,.jpg,.jpeg,.webp" hidden>
-            <div class="composer-actions"><button class="utility-btn attach-btn" id="uploadButton" type="button" title="Attach text, source code, an image, or a ZIP project"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="m8.5 12.5 6.2-6.2a3.2 3.2 0 0 1 4.5 4.5l-8.5 8.5a5 5 0 0 1-7.1-7.1l8.5-8.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Attach files</span></button><button class="utility-btn mic-btn" id="micButton" type="button" aria-label="Start speech to text" title="Speech to text"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3m-4 0h8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button><button class="send" id="sendButton" type="submit" aria-label="Send message" title="Send message"><svg class="send-arrow" viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><path d="M12 19V5M6.5 10.5 12 5l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><svg class="send-stop" viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" hidden><rect x="6.5" y="6.5" width="11" height="11" rx="1.5" fill="currentColor"/></svg></button></div>
+            <div class="composer-actions"><button class="utility-btn attach-btn" id="uploadButton" type="button" title="Attach an image, text, or source code"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="m8.5 12.5 6.2-6.2a3.2 3.2 0 0 1 4.5 4.5l-8.5 8.5a5 5 0 0 1-7.1-7.1l8.5-8.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Attach files</span></button><button class="utility-btn mic-btn" id="micButton" type="button" aria-label="Start speech to text" title="Speech to text"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3m-4 0h8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button><button class="stop-generation" id="stopButton" type="button" aria-label="Stop response" title="Stop response" aria-hidden="true" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/></svg></button><button class="send" id="sendButton" type="submit" aria-label="Send message" title="Send message"><svg class="send-arrow" viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><path d="M12 19V5M6.5 10.5 12 5l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
           </div>
         </form>
       </div>
@@ -1174,7 +1187,7 @@
   const chatHistoryEl = $('chatHistory');
   const pendingAttachmentEl = $('pendingAttachments');
   const sendArrow = sendButton.querySelector('.send-arrow');
-  const sendStop = sendButton.querySelector('.send-stop');
+  const stopButton = $('stopButton');
 
   const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
   const formatSize = (size) => {
@@ -1338,12 +1351,20 @@
     messagesEl.hidden = state.messages.length === 0;
     messagesEl.innerHTML = state.messages.map((item, index) => renderMessage(item, index)).join('');
     messagesEl.insertAdjacentHTML('beforeend', progressMarkup());
-    messagesEl.querySelectorAll('[data-action]').forEach(button => button.addEventListener('click', () => {
-      handleFileAction(button.dataset.action, Number(button.dataset.index), Number(button.dataset.file));
-    }));
-    messagesEl.querySelectorAll('[data-close-preview]').forEach(button => button.addEventListener('click', () => {
-      const panel = button.closest('.preview-panel');
-      if (panel) panel.classList.remove('open');
+    messagesEl.querySelectorAll('[data-copy-message]').forEach(button => button.addEventListener('click', async () => {
+      const item = state.messages[Number(button.dataset.copyMessage)];
+      if (!item || item.role !== 'assistant') return;
+      try {
+        await copyText(item.content || '');
+        const label = button.querySelector('span');
+        if (label) label.textContent = 'Copied';
+        button.setAttribute('aria-label', 'Response copied');
+        window.setTimeout(() => {
+          if (!button.isConnected) return;
+          if (label) label.textContent = 'Copy';
+          button.setAttribute('aria-label', 'Copy response');
+        }, 1300);
+      } catch (error) { showToast(friendlyError(error)); }
     }));
     bindCodeButtons(messagesEl);
     updateSendButton();
@@ -1361,17 +1382,11 @@
       return '<div class="notice ' + (item.success ? 'success' : '') + '">' + escapeHtml(item.content || item.text || '') + '</div>';
     }
     const isUser = item.role === 'user';
-    const files = Array.isArray(item.files) ? item.files : [];
     const activeProfile = getAiProfile(state.conversationAiProfileId);
     const label = isUser ? 'You' : (activeProfile ? activeProfile.name : 'Incandescent');
     const attached = Array.isArray(item.attachments) && item.attachments.length ? '<div class="message-attachments">' + item.attachments.map(file => '<span class="pending-chip">' + escapeHtml(file.filename) + '</span>').join('') + '</div>' : '';
-    return '<article class="message ' + (isUser ? 'user' : 'assistant') + '" data-message-index="' + index + '"><div class="avatar" aria-hidden="true">' + (isUser ? 'YOU' : '<img src="/incandescent.ico?v=6" alt="" loading="lazy">') + '</div><div class="message-body"><div class="message-label">' + label + '</div><div class="message-content">' + renderMarkdown(item.content) + '</div>' + attached + (files.length ? '<div class="files">' + files.map((file, fileIndex) => renderFile(file, index, fileIndex)).join('') + '</div>' : '') + '</div></article>';
-  }
-
-  function renderFile(file, index, fileIndex) {
-    const label = [file.mime_type || fileType(file.filename, ''), formatSize(file.size)].filter(Boolean).join(' · ');
-    const canPreview = isTextFile(file);
-    return '<div class="file-card"><div class="file-icon">' + escapeHtml(fileType(file.filename, file.mime_type)) + '</div><div class="file-info"><div class="file-name">' + escapeHtml(file.filename || 'Unnamed file') + '</div><div class="file-meta">' + escapeHtml(label || 'Project artifact') + '</div></div><div class="file-actions">' + (canPreview ? '<button type="button" data-action="preview" data-index="' + index + '" data-file="' + fileIndex + '">Preview</button>' : '') + (canPreview ? '<button type="button" data-action="copy" data-index="' + index + '" data-file="' + fileIndex + '">Copy</button>' : '') + '<button type="button" data-action="download" data-index="' + index + '" data-file="' + fileIndex + '">Download</button></div></div><div class="preview-panel" data-preview="' + index + '-' + fileIndex + '"><div class="preview-head"><span>Preview · ' + escapeHtml(file.filename || 'file') + '</span><button type="button" data-close-preview aria-label="Close preview">Close</button></div><pre class="preview-code">Loading preview…</pre><iframe class="html-preview" title="Isolated HTML artifact preview" sandbox="allow-scripts" hidden></iframe></div>';
+    const copyAction = isUser ? '' : '<div class="message-actions"><button class="copy-response" type="button" data-copy-message="' + index + '" title="Copy response" aria-label="Copy response"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span>Copy</span></button></div>';
+    return '<article class="message ' + (isUser ? 'user' : 'assistant') + '" data-message-index="' + index + '"><div class="avatar" aria-hidden="true">' + (isUser ? 'YOU' : '<img src="/incandescent.ico?v=6" alt="" loading="lazy">') + '</div><div class="message-body"><div class="message-label">' + label + '</div><div class="message-content">' + renderMarkdown(item.content) + '</div>' + copyAction + attached + '</div></article>';
   }
 
   function addMessage(role, content, extra) {
@@ -1442,20 +1457,16 @@
     const hasDraft = Boolean(input.value.trim()) || state.pendingAttachments.length > 0;
     const request = activeRequest();
     const sending = !!request;
-    // Like ChatGPT: square = stop only when generating with no draft; an entered draft
-    // switches back to the arrow and queues a follow-up for this conversation.
-    const mode = sending && !hasDraft ? 'stop' : 'send';
-    sendButton.dataset.mode = mode;
+    sendButton.dataset.mode = 'send';
     sendButton.classList.toggle('is-generating', sending);
-    // Explicit classes as well as the hidden attribute protect against CSS display rules
-    // overriding SVG's user-agent [hidden] behavior in some browsers.
-    sendArrow.hidden = mode !== 'send';
-    sendStop.hidden = mode !== 'stop';
-    sendArrow.style.display = mode === 'send' ? 'block' : 'none';
-    sendStop.style.display = mode === 'stop' ? 'block' : 'none';
-    sendButton.setAttribute('aria-label', mode === 'stop' ? 'Stop generation' : (sending ? 'Queue follow-up' : 'Send message'));
-    sendButton.title = mode === 'stop' ? 'Stop current response' : (sending ? 'Send follow-up' : 'Send message');
-    sendButton.disabled = state.uploading || (!sending && !hasDraft);
+    sendArrow.hidden = false;
+    sendArrow.style.display = 'block';
+    sendButton.setAttribute('aria-label', sending ? 'Queue follow-up' : 'Send message');
+    sendButton.title = sending ? 'Send follow-up' : 'Send message';
+    sendButton.disabled = state.uploading || !hasDraft;
+    stopButton.classList.toggle('visible', sending);
+    stopButton.disabled = !sending;
+    stopButton.setAttribute('aria-hidden', String(!sending));
     if (sending && request.queuedMessages.length) {
       const progress = $('progressText');
       if (progress) progress.textContent = (request.progress || 'Working…') + ' · ' + request.queuedMessages.length + ' follow-up(s) queued';
@@ -2208,6 +2219,79 @@
     });
   }
 
+  async function buildImageAnalysisLayers(filename, dataUrl) {
+    const image = new Image();
+    await new Promise((resolve, reject) => {
+      image.onload = resolve;
+      image.onerror = () => reject(new Error('This image could not be decoded. Try a PNG, JPEG, or WebP image.'));
+      image.src = dataUrl;
+    });
+    const scale = Math.min(1, 480 / Math.max(image.naturalWidth || image.width, image.naturalHeight || image.height));
+    const width = Math.max(1, Math.round((image.naturalWidth || image.width) * scale));
+    const height = Math.max(1, Math.round((image.naturalHeight || image.height) * scale));
+    const sourceCanvas = document.createElement('canvas');
+    sourceCanvas.width = width; sourceCanvas.height = height;
+    const sourceContext = sourceCanvas.getContext('2d', { willReadFrequently: true });
+    if (!sourceContext) throw new Error('Image processing is unavailable in this browser.');
+    sourceContext.drawImage(image, 0, 0, width, height);
+    const pixels = sourceContext.getImageData(0, 0, width, height);
+    const luminance = new Float32Array(width * height);
+    for (let i = 0, p = 0; i < pixels.data.length; i += 4, p++) luminance[p] = pixels.data[i] * 0.2126 + pixels.data[i + 1] * 0.7152 + pixels.data[i + 2] * 0.0722;
+    // Sobel gradient map helps reveal boundaries and geometry.
+    const edgeCanvas = document.createElement('canvas');
+    edgeCanvas.width = width; edgeCanvas.height = height;
+    const edgeContext = edgeCanvas.getContext('2d');
+    if (!edgeContext) throw new Error('Could not create the image edge map.');
+    const edgeData = edgeContext.createImageData(width, height);
+    const lum = (x, y) => luminance[Math.max(0, Math.min(height - 1, y)) * width + Math.max(0, Math.min(width - 1, x))];
+    for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+      const gx = -lum(x-1,y-1) + lum(x+1,y-1) - 2*lum(x-1,y) + 2*lum(x+1,y) - lum(x-1,y+1) + lum(x+1,y+1);
+      const gy = -lum(x-1,y-1) - 2*lum(x,y-1) - lum(x+1,y-1) + lum(x-1,y+1) + 2*lum(x,y+1) + lum(x+1,y+1);
+      const value = 255 - Math.min(255, Math.round(Math.hypot(gx, gy) * 0.42));
+      const offset = (y * width + x) * 4;
+      edgeData.data[offset] = value; edgeData.data[offset+1] = value; edgeData.data[offset+2] = value; edgeData.data[offset+3] = 255;
+    }
+    edgeContext.putImageData(edgeData, 0, 0);
+    // Quantized low-resolution color map highlights large regions with less texture noise.
+    const regionWidth = Math.max(1, Math.round(width / 4));
+    const regionHeight = Math.max(1, Math.round(height / 4));
+    const regionCanvas = document.createElement('canvas');
+    regionCanvas.width = regionWidth; regionCanvas.height = regionHeight;
+    const regionContext = regionCanvas.getContext('2d', { willReadFrequently: true });
+    if (!regionContext) throw new Error('Could not create the color-region map.');
+    regionContext.drawImage(sourceCanvas, 0, 0, regionWidth, regionHeight);
+    const regionData = regionContext.getImageData(0, 0, regionWidth, regionHeight);
+    for (let i = 0; i < regionData.data.length; i += 4) {
+      regionData.data[i] = Math.round(regionData.data[i] / 64) * 64;
+      regionData.data[i+1] = Math.round(regionData.data[i+1] / 64) * 64;
+      regionData.data[i+2] = Math.round(regionData.data[i+2] / 64) * 64;
+    }
+    regionContext.putImageData(regionData, 0, 0);
+    const colorCanvas = document.createElement('canvas');
+    colorCanvas.width = width; colorCanvas.height = height;
+    const colorContext = colorCanvas.getContext('2d');
+    if (!colorContext) throw new Error('Could not upscale the color-region map.');
+    colorContext.imageSmoothingEnabled = false;
+    colorContext.drawImage(regionCanvas, 0, 0, width, height);
+    const sourceName = String(filename || 'image').replace(/\.[^.]+$/, '').replace(/[^A-Za-z0-9_.-]/g, '_').slice(0, 55) || 'image';
+    const token = createLocalId().slice(0, 8);
+    const toLayer = (name, canvas) => {
+      const encoded = canvas.toDataURL('image/png').split(',')[1] || '';
+      return { filename: name, mime_type: 'image/png', size: Math.floor(encoded.length * 3 / 4), kind: 'image', data_base64: encoded };
+    };
+    return [toLayer(sourceName + '-' + token + '-edges.png', edgeCanvas), toLayer(sourceName + '-' + token + '-colors.png', colorCanvas)];
+  }
+
+  function expandAnalysisAttachments(items) {
+    return (Array.isArray(items) ? items : []).flatMap(item => {
+      if (item && item.kind === 'image' && Array.isArray(item.analysis_layers)) {
+        const { analysis_layers, ...original } = item;
+        return [original, ...analysis_layers];
+      }
+      return [item];
+    });
+  }
+
   const TEXT_EXTS = new Set(['txt','html','htm','css','scss','js','mjs','cjs','ts','tsx','jsx','json','md','py','xml','svg','yml','yaml','toml','ini','cfg','conf','sh','bat','ps1','sql','java','go','rs','c','h','cpp','hpp','php','rb','vue','svelte','astro','gitignore','editorconfig']);
   const IMAGE_EXTS = new Set(['png','jpg','jpeg','webp']);
   function fileExt(name) { return String(name || '').split('.').pop().toLowerCase(); }
@@ -2224,11 +2308,17 @@
       const mime = expectedImageMime ? (file.type === expectedImageMime ? file.type : expectedImageMime) : (file.type && (file.type.startsWith('text/') || file.type === 'application/json') ? file.type : 'text/plain');
       if (!TEXT_EXTS.has(ext) && !IMAGE_EXTS.has(ext)) { showToast('Unsupported file: ' + file.name); continue; }
       if (file.size > 1_500_000) { showToast(file.name + ' is too large. Each text/image file is limited to 1.5 MB.'); continue; }
-      const total = state.pendingAttachments.reduce((sum,item)=>sum + Number(item.size || 0),0) + file.size;
-      if (total > 3_500_000) { showToast('Pending attachments are limited to 3.5 MB total.'); break; }
+      const total = state.pendingAttachments.reduce((sum,item)=>sum + Number(item.size || 0) + (Array.isArray(item.analysis_layers) ? item.analysis_layers.reduce((a,layer)=>a + Number(layer.size || 0),0) : 0),0) + file.size;
+      if (total > 3_500_000) { showToast('Pending attachments are limited to 3.5 MB including image analysis layers.'); break; }
       if (IMAGE_EXTS.has(ext)) {
         const dataUrl = await new Promise((resolve,reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result || '')); reader.onerror = () => reject(new Error('Could not read image ' + file.name)); reader.readAsDataURL(file); });
-        state.pendingAttachments.push({ filename:file.name, mime_type:mime, size:file.size, kind:'image', data_base64:dataUrl.split(',')[1] || '' });
+        const original = { filename:file.name, mime_type:mime, size:file.size, kind:'image', data_base64:dataUrl.split(',')[1] || '' };
+        original.analysis_layers = await buildImageAnalysisLayers(file.name, dataUrl);
+        const stagedSize = state.pendingAttachments.reduce((sum,item)=>sum + Number(item.size || 0) + (Array.isArray(item.analysis_layers) ? item.analysis_layers.reduce((a,layer)=>a + Number(layer.size || 0),0) : 0),0);
+        const imageSetSize = Number(original.size || 0) + original.analysis_layers.reduce((sum,layer)=>sum + Number(layer.size || 0),0);
+        const stagedCount = state.pendingAttachments.reduce((sum,item)=>sum + 1 + (Array.isArray(item.analysis_layers) ? item.analysis_layers.length : 0),0);
+        if (stagedCount + 3 > 12 || stagedSize + imageSetSize > 3_500_000) { showToast('There is not enough attachment capacity for this image and its analysis layers.'); continue; }
+        state.pendingAttachments.push(original);
       } else {
         const content = await file.text();
         state.pendingAttachments.push({ filename:file.name, mime_type:mime, size:file.size, kind:'text', content });
