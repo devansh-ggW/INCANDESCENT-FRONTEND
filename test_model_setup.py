@@ -32,6 +32,15 @@ class ModelSetupHelpersTest(unittest.TestCase):
     def test_model_missing_is_false(self):
         self.assertFalse(model_setup.model_is_installed(["llama3.2:latest"]))
 
+    def test_missing_model_transitions_same_worker_into_pull(self):
+        from pathlib import Path
+        source = Path(model_setup.__file__).read_text(encoding="utf-8")
+        self.assertIn("__AUTO_PULL__:", source)
+        callback = source.split("def result_ready(code: str, message: str)", 1)[1].split(
+            "def start_worker(do_pull: bool = False)", 1
+        )[0]
+        self.assertNotIn('start_worker(True)', callback)
+
     def test_windows_note_is_safe_on_non_windows(self):
         if os.name != "nt":
             self.assertEqual(model_setup.windows_compatibility_note(), "This setup wizard is intended for Windows.")

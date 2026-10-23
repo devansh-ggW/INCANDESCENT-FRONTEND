@@ -176,12 +176,14 @@ def run_model_setup(data_dir: Path) -> int:
                 self.result_ready.emit("ready", MODEL_NAME + " is already installed and ready.")
                 return
             if not self.do_pull:
-                self.result_ready.emit(
-                    "missing",
-                    "Ollama is running, but " + MODEL_NAME + " is missing. "
-                    "The model download is approximately 2.7–3.1 GB.",
+                # Transition this same worker into the pull instead of starting a
+                # replacement QThread from inside a queued result signal. That avoids
+                # a race where the old worker is still exiting when its reference is
+                # replaced, which can crash Qt with "QThread: Destroyed while running".
+                self.progress_update.emit(
+                    0,
+                    "__AUTO_PULL__:Qwen 3.5 2B is missing. Starting the download automatically…",
                 )
-                return
 
             self.progress_update.emit(0, "Connecting to Ollama model registry…")
             try:
@@ -349,17 +351,13 @@ def run_model_setup(data_dir: Path) -> int:
             get_ollama.setVisible(False)
 
     def progress_update(percent: int, message: str) -> None:
+        if message.startswith("__AUTO_PULL__:"):
+            set_state("pulling", message.split(":", 1)[1])
         progress.setVisible(True)
         progress.setValue(percent)
-        status.setText(message)
+        status.setText(message.split(":", 1)[1] if message.startswith("__AUTO_PULL__:") else message)
 
     def result_ready(code: str, message: str) -> None:
-        if code == "missing":
-            set_state("pulling", message + "\n\nStarting the Qwen 3.5 2B download automatically…")
-            progress.setVisible(True)
-            progress.setValue(0)
-            start_worker(True)
-            return
         if code in ("offline", "ready", "failed"):
             set_state(code, message)
 
