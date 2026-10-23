@@ -1,0 +1,38 @@
+name: Incandescent regression checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Set up Node for JavaScript syntax checks
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check inline browser JavaScript syntax
+        run: |
+          python -c "from pathlib import Path; import re; h=Path('index.html').read_text(encoding='utf-8'); m=re.search(r'<script>(.*?)</script>', h, re.S); assert m, 'main script not found'; Path('/tmp/incandescent-ui.js').write_text(m.group(1), encoding='utf-8')"
+          node --check /tmp/incandescent-ui.js
+      - name: Compile maintained Python modules
+        run: |
+          python -m py_compile desktop_app.py model_setup.py server.py run_incandescent.py evaluation/run_eval.py training/check_hardware.py training/prepare_dataset.py training/train_lora.py test_engine.py test_features.py test_training_pipeline.py
+      - name: Test model setup helpers
+        run: python test_model_setup.py
+      - name: Test custom AI export package
+        run: python test_ai_portability.py
+      - name: Run chat, UI and training-tool regression suites
+        run: |
+          python test_engine.py
+          python test_features.py
+          python test_training_pipeline.py
