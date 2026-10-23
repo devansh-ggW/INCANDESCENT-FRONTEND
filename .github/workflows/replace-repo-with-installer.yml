@@ -15,7 +15,7 @@ permissions:
 jobs:
   replace-tree:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -46,7 +46,7 @@ jobs:
           set -euo pipefail
           package="$RUNNER_TEMP/incandescent-bundle"
 
-          # Use Git LFS only if a packaged file approaches GitHub's 100 MiB regular-file limit.
+          # Check size before changing the working tree.
           use_lfs=0
           while IFS= read -r -d '' file; do
             size=$(stat -c '%s' "$file")
@@ -55,16 +55,21 @@ jobs:
             fi
           done < <(find "$package" -type f -print0)
 
+          # Remove all current tracked project files and any untracked debris.
+          git rm -rf --ignore-unmatch .
+          git clean -fdx
+
+          # Restore only the downloaded artifact's files and their folder structure.
+          cp -a "$package"/. "$GITHUB_WORKSPACE"/
+
+          # Large executables must be stored in LFS to pass GitHub's 100 MiB limit.
+          # Create .gitattributes after clean/copy so it survives and is committed.
           if [ "$use_lfs" -eq 1 ]; then
             sudo apt-get update
             sudo apt-get install -y git-lfs
             git lfs install
             git lfs track "*.exe"
           fi
-
-          git rm -rf --ignore-unmatch .
-          git clean -fdx
-          cp -a "$package"/. "$GITHUB_WORKSPACE"/
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
