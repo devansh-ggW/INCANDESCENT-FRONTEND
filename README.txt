@@ -7,7 +7,7 @@ WINDOWS INSTALLER
 -----------------
 1. Run INCANDESCENT-Setup.exe.
 2. Install and start Ollama separately. INCANDESCENT does not install or replace Ollama.
-3. The setup window checks whether qwen3.5:2b is installed. If it is missing, select Download Qwen 3.5 2B to install it through Ollama with visible progress.
+3. The setup window checks whether qwen3.5:2b is installed. If it is missing and Ollama is running, the download starts automatically with visible progress.
 4. The model download is approximately 2.7–3.1 GB and requires an internet connection. Ollama stores it in its configured model directory.
 5. If you skip model setup, open Prepare INCANDESCENT Model from the Start Menu later.
 6. The first Windows release targets 64-bit Windows 10 and later. Older Windows builds may run the app if an existing Ollama responds, but current Ollama documentation lists Windows 10 22H2 or newer as its supported baseline. Windows ARM64 initially runs the x64 app via emulation. 32-bit Windows and Windows 7/8/8.1 are not supported by this installer.
@@ -44,7 +44,7 @@ Chat/profile data is stored under %LOCALAPPDATA%\INCANDESCENT and remains after 
 
 TROUBLESHOOTING
 ---------------
-- If Ollama is offline, open Ollama, wait until it is running, then retry model setup.
+- The desktop app tries to start an existing local Ollama service if it is not listening. If connection still fails, open Ollama and check %LOCALAPPDATA%\INCANDESCENT\desktop.log.
 - The Start Menu's Prepare INCANDESCENT Model shortcut can install or verify qwen3.5:2b again.
 - If the app cannot start, check %LOCALAPPDATA%\INCANDESCENT\desktop.log.
 - If image analysis is unavailable, select an installed vision-capable model in Settings.
@@ -54,11 +54,11 @@ LIMITATIONS
 This Windows installer does not bundle Ollama or model weights. The model is downloaded through the user's own Ollama installation. This build is not code-signed. Model quality and speed depend on the installed model and computer hardware. Real-device testing is required before claiming support for any Windows release/architecture.
 
 
-LATEST WINDOWS INSTALLER (v1.1.0)
+LATEST WINDOWS INSTALLER (v1.1.1)
 Download the real installer from GitHub Releases:
-https://github.com/devansh-ggW/INCANDESCENT-FRONTEND/releases/download/v1.1.0/INCANDESCENT-Setup.exe
+https://github.com/devansh-ggW/INCANDESCENT-FRONTEND/releases/download/v1.1.1/INCANDESCENT-Setup.exe
 
 Standalone app:
-https://github.com/devansh-ggW/INCANDESCENT-FRONTEND/releases/download/v1.1.0/INCANDESCENT.exe
+https://github.com/devansh-ggW/INCANDESCENT-FRONTEND/releases/download/v1.1.1/INCANDESCENT.exe
 
 After saving a custom AI, add it to Ollama under a name derived from the AI's name, or export an editable ZIP with the Modelfile, profile metadata and instructions. The ZIP does not include the multi-gigabyte model weights. Another computer needs Ollama and qwen3.5:2b.

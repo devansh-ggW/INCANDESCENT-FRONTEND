@@ -42,9 +42,10 @@ def normalize_ollama_base(raw_host: Optional[str]) -> str:
             "for example 127.0.0.1:11434. Received: %r" % raw_host
         )
 
-    # 0.0.0.0 and :: are server bind addresses, not the right destination
-    # for an app running on this same computer. Route local calls via loopback.
-    if parsed.hostname in ("0.0.0.0", "::"):
+    # Ollama is local to the app. Resolve localhost to explicit IPv4 because
+    # some older Windows/Python/Qt combinations try ::1 first while Ollama listens
+    # only on 127.0.0.1. Unspecified bind addresses are not client destinations.
+    if parsed.hostname in ("localhost", "0.0.0.0", "::"):
         port_suffix = ":%s" % parsed.port if parsed.port is not None else ""
         parsed = parsed._replace(netloc="127.0.0.1" + port_suffix)
 
@@ -378,7 +379,15 @@ def ollama_request(messages: List[Dict[str, Any]], use_tools: bool = True, strea
             raise RuntimeError("The configured AI model is unavailable. Check the application setup and try again.")
         raise RuntimeError("The AI service returned an error (%s). %s" % (exc.code, detail or exc.reason))
     except urllib.error.URLError as exc:
-        raise RuntimeError("The AI service could not be reached. Check the application setup and try again.")
+        reason = getattr(exc, "reason", None)
+        detail = str(reason or exc).strip()
+        if len(detail) > 240:
+            detail = detail[:237] + "..."
+        raise RuntimeError(
+            "Could not connect to Ollama at " + OLLAMA_BASE + ". "
+            "Make sure Ollama is running and qwen3.5:2b is installed. "
+            "Connection detail: " + detail
+        )
     except TimeoutError:
         raise RuntimeError("The request took too long. Try a smaller first step, then build on it.")
     except json.JSONDecodeError:

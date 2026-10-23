@@ -10,10 +10,13 @@ from __future__ import annotations
 import importlib
 import logging
 import os
+import shutil
+import subprocess
 import sys
 import threading
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 from typing import Optional
@@ -110,6 +113,76 @@ def wait_until_ready(url: str, timeout_seconds: float = 5.0) -> bool:
     return False
 
 
+_OLLAMA_CHILD: Optional[subprocess.Popen] = None
+
+
+def find_ollama_executable() -> Optional[Path]:
+    """Find an already-installed local Ollama binary; never downloads or installs it."""
+    for command in ("ollama.exe", "ollama"):
+        found = shutil.which(command)
+        if found:
+            return Path(found)
+    roots = [
+        Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "Ollama" / "ollama.exe",
+        Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / "Ollama" / "ollama.exe",
+        Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")) / "Ollama" / "ollama.exe",
+    ]
+    return next((candidate for candidate in roots if candidate.is_file()), None)
+
+
+def ensure_ollama_running(backend, timeout_seconds: float = 7.0) -> bool:
+    """Wake up an existing local Ollama install when its API is not listening yet."""
+    global _OLLAMA_CHILD
+    try:
+        parsed = urllib.parse.urlsplit(backend.OLLAMA_BASE)
+        if parsed.hostname not in {"127.0.0.1", "localhost", "::1"}:
+            return False  # Respect intentionally remote OLLAMA_HOST values.
+    except Exception:
+        return False
+
+    tags_url = backend.OLLAMA_BASE.rstrip("/") + "/api/tags"
+
+    def probe() -> bool:
+        try:
+            request = urllib.request.Request(tags_url, headers={"Accept": "application/json"})
+            with urllib.request.urlopen(request, timeout=0.65) as response:
+                return response.status == 200
+        except (urllib.error.URLError, TimeoutError, OSError, ValueError):
+            return False
+
+    if probe():
+        return True
+
+    executable = find_ollama_executable()
+    if executable is None:
+        logging.warning("Ollama API is not reachable at %s and no installed ollama.exe was found.", backend.OLLAMA_BASE)
+        return False
+
+    try:
+        flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+        _OLLAMA_CHILD = subprocess.Popen(
+            [str(executable), "serve"],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            close_fds=True,
+            creationflags=flags,
+        )
+        logging.info("Started the existing Ollama service from %s", executable)
+    except (OSError, ValueError) as exc:
+        # A background Ollama service may be starting at the same time. Probe anyway.
+        logging.info("Could not start an Ollama child process (%s); checking whether another service is starting.", exc)
+
+    deadline = time.monotonic() + max(0.5, timeout_seconds)
+    while time.monotonic() < deadline:
+        if probe():
+            logging.info("Ollama API is available at %s", backend.OLLAMA_BASE)
+            return True
+        time.sleep(0.25)
+    logging.warning("Ollama API did not become available at %s after startup attempt.", backend.OLLAMA_BASE)
+    return False
+
+
 def main() -> int:
     data_dir = application_data_dir()
     configure_logging(data_dir)
@@ -159,6 +232,10 @@ def main() -> int:
         # Dynamic imports are explicitly included by the PyInstaller build flags.
         backend = importlib.import_module("server")
         backend.HOST = HOST
+        # Start only an Ollama installation already present on this PC if its local
+        # API is asleep. The UI can still open when Ollama is unavailable; status and
+        # the request error then show the exact configured endpoint/reason.
+        ensure_ollama_running(backend)
         httpd = make_server(backend)
         port = int(httpd.server_address[1])
         url = f"http://{HOST}:{port}/"

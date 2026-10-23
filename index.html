@@ -1053,6 +1053,28 @@
       .ai-deploy-actions { justify-content:stretch; }
       .ai-deploy-actions button { flex:1; }
     }
+  
+    /* Readable, non-overlapping conversation heading on the bundled Qt renderer. */
+    .sidebar-search-label {
+      display:block !important;
+      box-sizing:border-box !important;
+      width:100% !important;
+      min-width:0 !important;
+      margin:4px 0 3px !important;
+      padding:0 3px !important;
+      line-height:1.45 !important;
+      font-size:11px !important;
+      font-weight:600 !important;
+      letter-spacing:.01em !important;
+      text-transform:none !important;
+      white-space:nowrap !important;
+      overflow:hidden !important;
+      text-overflow:ellipsis !important;
+      color:#565960 !important;
+    }
+    #chatSearch { margin-top:0 !important; }
+    #chatHistory { margin-top:2px !important; min-width:0 !important; }
+    #aiProfilesList { min-width:0 !important; }
   </style>
 </head>
 <body>
@@ -1207,6 +1229,13 @@
     streamRenderScheduled: false
   };
   const $ = (id) => document.getElementById(id);
+
+  // Older bundled Qt WebEngine does not implement the replaceChildren method.
+  // Use removeChild so Create AI and model settings work on that runtime.
+  function clearChildren(element) {
+    if (!element) return;
+    while (element.firstChild) element.removeChild(element.firstChild);
+  }
   const welcome = $('welcome');
   const messagesEl = $('messages');
   const conversation = $('conversationScroll');
@@ -1974,7 +2003,7 @@
   function renderCatalogProducts(products) {
     const list = $('aiCatalogList');
     if (!list) return;
-    list.replaceChildren();
+    clearChildren(list);
     (Array.isArray(products) ? products : []).slice(0,200).forEach(product => addCatalogProductRow(product));
   }
 
@@ -2489,7 +2518,7 @@
     try {
       const data = await readResponse(await fetch('/api/models', { headers: { Accept: 'application/json' }, cache: 'no-store' }));
       const models = Array.isArray(data.models) ? data.models : [];
-      select.replaceChildren();
+      clearChildren(select);
       if (!models.length) {
         select.add(new Option('No model choices available', ''));
         note.textContent = 'Model choices are currently unavailable. Reopen settings and try again.';
@@ -2505,7 +2534,8 @@
       note.textContent = 'Select the model for new replies. Wait for an active reply to finish before switching.';
       note.className = 'model-picker-status';
     } catch (error) {
-      select.replaceChildren(new Option('Could not load models', ''));
+      clearChildren(select);
+      select.add(new Option('Could not load models', ''));
       note.textContent = 'Could not load model choices. Reopen settings and try again.';
       note.className = 'model-picker-status error';
     }
@@ -2525,7 +2555,8 @@
   input.addEventListener('keydown', event => {
     if (event.key === 'Enter' && !event.shiftKey && state.enterSends) {
       event.preventDefault();
-      form.requestSubmit();
+      if (typeof form.requestSubmit === 'function') form.requestSubmit();
+      else form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
     }
   });
   input.addEventListener('input', () => {

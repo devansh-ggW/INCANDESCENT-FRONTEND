@@ -4,11 +4,11 @@ A local desktop AI workspace powered by Ollama, with conversational chat, code h
 
 ## Windows download
 
-**[Download the INCANDESCENT v1.1.0 installer](https://github.com/devansh-ggW/INCANDESCENT-FRONTEND/releases/download/v1.1.0/INCANDESCENT-Setup.exe)**
+**[Download the INCANDESCENT v1.1.1 installer](https://github.com/devansh-ggW/INCANDESCENT-FRONTEND/releases/download/v1.1.1/INCANDESCENT-Setup.exe)**
 
-[Release page and files](https://github.com/devansh-ggW/INCANDESCENT-FRONTEND/releases/tag/v1.1.0)
+[Release page and files](https://github.com/devansh-ggW/INCANDESCENT-FRONTEND/releases/tag/v1.1.1)
 
-The installer uses your existing Ollama installation; it does not install Ollama. When Ollama is responding, setup automatically downloads `qwen3.5:2b` if missing. The model download requires internet access and several gigabytes of storage.
+The installer uses your existing Ollama installation; it does not install Ollama. When Ollama is responding, setup automatically downloads `qwen3.5:2b` if missing. The app also attempts to start your already-installed local Ollama service if it is not listening. The model download requires internet access and several gigabytes of storage.
 
 ## Custom AIs
 

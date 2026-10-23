@@ -28,6 +28,28 @@ def valid_png() -> bytes:
 
 
 def main() -> None:
+    # Local endpoint normalization should be deterministic on old Windows resolver stacks.
+    check(mod.normalize_ollama_base("localhost:11434") == "http://127.0.0.1:11434",
+          "localhost resolves to explicit IPv4")
+    check(mod.normalize_ollama_base("0.0.0.0:11434") == "http://127.0.0.1:11434",
+          "unspecified bind address routes to loopback")
+
+    # Verify that a failed Ollama connection reports the endpoint and OS reason.
+    old_urlopen = mod.urllib.request.urlopen
+    def refuse_connection(*args, **kwargs):
+        raise urllib.error.URLError("Connection refused")
+    mod.urllib.request.urlopen = refuse_connection
+    try:
+        try:
+            mod.ollama_request([{"role": "user", "content": "Hi"}], use_tools=False)
+        except RuntimeError as exc:
+            check("http://127.0.0.1:11434" in str(exc) and "Connection refused" in str(exc),
+                  "connection error includes endpoint and network details")
+        else:
+            raise AssertionError("unreachable Ollama endpoint should fail")
+    finally:
+        mod.urllib.request.urlopen = old_urlopen
+
     # Safe attachment filenames and bounded prior history.
     check(mod.safe_filename("screen.png") == "screen.png", "ordinary image filename is accepted")
     check(mod.safe_filename("src/app.py") == "src/app.py", "relative source paths remain readable")

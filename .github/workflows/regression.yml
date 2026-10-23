@@ -26,11 +26,13 @@ jobs:
           node --check /tmp/incandescent-ui.js
       - name: Compile maintained Python modules
         run: |
-          python -m py_compile desktop_app.py model_setup.py server.py run_incandescent.py evaluation/run_eval.py training/check_hardware.py training/prepare_dataset.py training/train_lora.py test_engine.py test_features.py test_training_pipeline.py
+          python -m py_compile desktop_app.py model_setup.py server.py run_incandescent.py evaluation/run_eval.py training/check_hardware.py training/prepare_dataset.py training/train_lora.py test_engine.py test_features.py test_training_pipeline.py test_desktop_startup.py
       - name: Test model setup helpers
         run: python test_model_setup.py
       - name: Test custom AI export package
         run: python test_ai_portability.py
+      - name: Test desktop Ollama startup recovery
+        run: python test_desktop_startup.py
       - name: Run chat, UI and training-tool regression suites
         run: |
           python test_engine.py
