@@ -1,5 +1,6 @@
 import os
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 import model_setup
@@ -22,6 +23,12 @@ class ModelSetupHelpersTest(unittest.TestCase):
         with patch.dict(os.environ, {"OLLAMA_HOST": "ftp://not-valid"}, clear=True):
             with self.assertRaises(ValueError):
                 model_setup.ollama_base_url()
+
+    def test_setup_waits_for_checker_thread_before_auto_pull(self):
+        source = (Path(__file__).with_name("model_setup.py")).read_text(encoding="utf-8")
+        self.assertIn('"auto_pull_pending": False', source)
+        self.assertIn('worker.finished.connect(lambda worker=worker: worker_finished(worker))', source)
+        self.assertIn('worker is None or not worker.isRunning()', source)
 
     def test_default_model_is_qwen_35_two_billion(self):
         self.assertEqual(model_setup.MODEL_NAME, "qwen3.5:2b")

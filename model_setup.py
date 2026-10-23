@@ -310,7 +310,7 @@ def run_model_setup(data_dir: Path) -> int:
     buttons.addWidget(skip)
     buttons.addWidget(primary)
     layout.addLayout(buttons)
-    state = {"value": "checking", "worker": None}
+    state = {"value": "checking", "worker": None, "auto_pull_pending": False}
 
     def set_state(value: str, message: str) -> None:
         state["value"] = value
@@ -355,13 +355,24 @@ def run_model_setup(data_dir: Path) -> int:
 
     def result_ready(code: str, message: str) -> None:
         if code == "missing":
+            # Keep this status visible, but start the second worker only after the
+            # checking thread has actually exited. Replacing a live QThread can crash.
             set_state("pulling", message + "\n\nStarting the Qwen 3.5 2B download automatically…")
             progress.setVisible(True)
             progress.setValue(0)
-            start_worker(True)
+            state["auto_pull_pending"] = True
+            worker = state.get("worker")
+            if worker is None or not worker.isRunning():
+                state["auto_pull_pending"] = False
+                start_worker(True)
             return
         if code in ("offline", "ready", "failed"):
             set_state(code, message)
+
+    def worker_finished(worker) -> None:
+        if state.get("auto_pull_pending") and state.get("worker") is worker:
+            state["auto_pull_pending"] = False
+            start_worker(True)
 
     def start_worker(do_pull: bool = False) -> None:
         set_state("pulling" if do_pull else "checking",
@@ -370,6 +381,7 @@ def run_model_setup(data_dir: Path) -> int:
         state["worker"] = worker
         worker.progress_update.connect(progress_update)
         worker.result_ready.connect(result_ready)
+        worker.finished.connect(lambda worker=worker: worker_finished(worker))
         worker.start()
 
     def primary_clicked() -> None:
