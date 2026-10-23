@@ -1,0 +1,12 @@
+INCANDESCENT WINDOWS INSTALLER
+=============================
+1. Run INCANDESCENT-Setup.exe.
+2. Keep Ollama installed and running. This installer does not install Ollama.
+3. The setup checks for qwen3.5:2b and downloads it if it is missing.
+4. Model download is approximately 2.7–3.1 GB and requires internet access.
+5. If you skip model setup, open "Prepare INCANDESCENT Model" from Start Menu later.
+6. The application and model setup work without a separate WebView2 install.
+7. If startup fails, check %LOCALAPPDATA%\INCANDESCENT\desktop.log.
+
+The first release targets 64-bit Windows 10 and later. Windows ARM64 uses x64 emulation.
+Windows 7/8/8.1 and 32-bit Windows are not supported by this installer.
