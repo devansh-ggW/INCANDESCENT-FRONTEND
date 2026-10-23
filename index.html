@@ -1029,6 +1029,10 @@
     .personalization-dialog[open] { max-height:88vh; overflow-y:auto; }
     .ai-deploy-dialog { width:min(520px,calc(100vw - 28px)); max-width:none; padding:0; }
     .ai-deploy-dialog-content { padding:23px; }
+    #aiDeployModelName { margin:5px 0 2px; }
+    #aiDeployTagHint strong { color:#303137; font-family:ui-monospace,Consolas,monospace; }
+    .ai-profile-actions button[data-install-ai] { color:#27634f !important; }
+    .ai-profile-actions button[data-install-ai]:hover { color:#184d3c !important; border-color:#b9d7c9 !important; background:#eff8f2 !important; }
     .ai-deploy-dialog h2 { margin:4px 0 8px; font-size:22px; letter-spacing:-.025em; }
     .ai-deploy-description { color:#65676e; font-size:12px; line-height:1.65; }
     .ai-deploy-note { margin-top:12px; padding:10px 11px; border:1px solid #e2e2e5; border-radius:8px; background:#f8f8f9; color:#55585f; font-size:11px; line-height:1.55; }
@@ -1191,8 +1195,10 @@
     <div class="ai-deploy-dialog-content">
       <div class="eyebrow">AI ready</div>
       <h2 id="aiDeployTitle">Choose how to use your AI</h2>
-      <p class="ai-deploy-description" id="aiDeployDescription">Your assistant is saved in this workspace. You can add it to Ollama or export an editable package.</p>
-      <div class="ai-deploy-note">The portable package contains editable configuration, not the multi-gigabyte Qwen weights. Other computers need Ollama and the Qwen 3.5 2B base model.</div>
+      <p class="ai-deploy-description" id="aiDeployDescription">Choose the name you want to use for this assistant in Ollama, then add it with one click.</p>
+      <label class="field-label" for="aiDeployModelName">Name in Ollama</label>
+      <input class="ai-input" id="aiDeployModelName" type="text" maxlength="72" required autocomplete="off" placeholder="e.g. dawg or dig it up" aria-describedby="aiDeployTagHint">
+      <div class="ai-deploy-note" id="aiDeployTagHint">Ollama model tag: <strong id="aiDeployTagPreview">your-ai:latest</strong>. The model reuses your installed Qwen 3.5 2B base model. The portable ZIP contains editable configuration, not the multi-gigabyte model weights.</div>
       <div id="aiDeployStatus" role="status" aria-live="polite"></div>
       <div class="ai-deploy-actions">
         <button class="ai-deploy-secondary" id="aiDeployDone" type="button">Done</button>
@@ -1919,9 +1925,13 @@
       const purpose = profile.purpose || 'Personal assistant';
       return '<div class="ai-profile-row ' + (selected ? 'selected' : '') + '">' +
         '<button class="ai-profile-use" type="button" data-use-ai="' + escapeHtml(profile.id) + '" title="Start a chat with ' + escapeHtml(profile.name) + '"><strong>' + escapeHtml(profile.name) + '</strong><span>' + escapeHtml(purpose) + '</span></button>' +
-        '<div class="ai-profile-actions"><button type="button" data-edit-ai="' + escapeHtml(profile.id) + '" title="Edit ' + escapeHtml(profile.name) + '" aria-label="Edit ' + escapeHtml(profile.name) + '">✎</button><button type="button" data-delete-ai="' + escapeHtml(profile.id) + '" title="Delete ' + escapeHtml(profile.name) + '" aria-label="Delete ' + escapeHtml(profile.name) + '">×</button></div></div>';
+        '<div class="ai-profile-actions">' +
+        '<button type="button" data-install-ai="' + escapeHtml(profile.id) + '" title="Add ' + escapeHtml(profile.name) + ' to Ollama" aria-label="Add ' + escapeHtml(profile.name) + ' to Ollama"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 16v4h14v-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>' +
+        '<button type="button" data-edit-ai="' + escapeHtml(profile.id) + '" title="Edit ' + escapeHtml(profile.name) + '" aria-label="Edit ' + escapeHtml(profile.name) + '">✎</button>' +
+        '<button type="button" data-delete-ai="' + escapeHtml(profile.id) + '" title="Delete ' + escapeHtml(profile.name) + '" aria-label="Delete ' + escapeHtml(profile.name) + '">×</button></div></div>';
     }).join('');
     list.querySelectorAll('[data-use-ai]').forEach(button => button.addEventListener('click', () => startAiConversation(button.dataset.useAi)));
+    list.querySelectorAll('[data-install-ai]').forEach(button => button.addEventListener('click', () => openAiDeployOptions(button.dataset.installAi)));
     list.querySelectorAll('[data-edit-ai]').forEach(button => button.addEventListener('click', () => openAiBuilder(button.dataset.editAi)));
     list.querySelectorAll('[data-delete-ai]').forEach(button => button.addEventListener('click', () => deleteAiProfile(button.dataset.deleteAi)));
   }
@@ -2023,38 +2033,61 @@
     return Array.from(bytes, value => value.toString(16).padStart(2,'0')).join('');
   }
 
+  function ollamaModelTagPreview(displayName) {
+    const slug = String(displayName || '').trim().toLowerCase()
+      .replace(/[^a-z0-9._-]+/g, '-')
+      .replace(/[-_.]{2,}/g, '-')
+      .replace(/^[-_.]+|[-_.]+$/g, '')
+      .slice(0, 60);
+    return (slug || 'incandescent-ai') + ':latest';
+  }
+
+  function updateAiDeployTagPreview() {
+    $('aiDeployTagPreview').textContent = ollamaModelTagPreview($('aiDeployModelName').value);
+  }
+
   function openAiDeployOptions(profileId) {
     const profile = getAiProfile(profileId);
     if (!profile) return;
     state.pendingDeploymentProfileId = profile.id;
-    $('aiDeployTitle').textContent = 'Finish setting up ' + profile.name;
-    $('aiDeployDescription').textContent = 'Your AI is saved in this workspace. Add a named model to Ollama or download an editable package to share and modify.';
+    $('aiDeployTitle').textContent = 'Add ' + profile.name + ' to Ollama';
+    $('aiDeployDescription').textContent = 'Choose the name you want this assistant to have in your local Ollama model list.';
     $('aiDeployStatus').textContent = '';
     $('aiDeployStatus').className = '';
     $('aiDeployInstall').disabled = false;
     $('aiDeployExport').disabled = false;
     $('aiDeployInstall').textContent = 'Add to Ollama';
     $('aiDeployExport').textContent = 'Download portable files';
+    $('aiDeployModelName').value = profile.name;
+    updateAiDeployTagPreview();
     showDialogSafely($('aiDeployDialog'));
   }
 
   async function installAiInOllama() {
     const profile = getAiProfile(state.pendingDeploymentProfileId);
     if (!profile) { $('aiDeployStatus').textContent = 'This AI profile could not be found. Close this window and save it again.'; $('aiDeployStatus').className = 'error'; return; }
+    const displayName = $('aiDeployModelName').value.trim();
+    if (!displayName) {
+      $('aiDeployStatus').textContent = 'Enter the name you want to see in Ollama.';
+      $('aiDeployStatus').className = 'error';
+      $('aiDeployModelName').focus();
+      return;
+    }
     const button = $('aiDeployInstall');
     button.disabled = true; $('aiDeployExport').disabled = true;
     $('aiDeployStatus').className = '';
-    $('aiDeployStatus').textContent = 'Creating a local Ollama model… This may take a little while.';
+    $('aiDeployStatus').textContent = 'Adding ' + displayName + ' to Ollama…';
     try {
       const response = await fetch('/api/ai/install', {
         method:'POST', headers:{'Content-Type':'application/json', Accept:'application/json'},
-        body:JSON.stringify({profile})
+        body:JSON.stringify({profile, model_name:displayName})
       });
       const data = await readResponse(response);
       $('aiDeployStatus').textContent = data.message || ('Added to Ollama as ' + data.model + '.');
       $('aiDeployStatus').className = 'success';
       button.textContent = 'Added to Ollama';
-      showToast(profile.name + ' added to Ollama');
+      $('aiDeployTagPreview').textContent = data.model || ollamaModelTagPreview(displayName);
+      showToast(data.message || (displayName + ' added to Ollama'));
     } catch (error) {
       $('aiDeployStatus').textContent = friendlyError(error);
       $('aiDeployStatus').className = 'error';
@@ -2073,7 +2106,7 @@
     try {
       const response = await fetch('/api/ai/export', {
         method:'POST', headers:{'Content-Type':'application/json', Accept:'application/zip'},
-        body:JSON.stringify({profile})
+        body:JSON.stringify({profile, model_name:$('aiDeployModelName').value.trim() || profile.name})
       });
       if (!response.ok) {
         let detail = 'The export could not be prepared.';
@@ -2084,13 +2117,13 @@
       if (!blob.size) throw new Error('The export package is empty. Try again.');
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
-      const safeName = profile.name.toLowerCase().replace(/[^a-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '').slice(0,60) || 'custom-ai';
+      const safeName = ($('aiDeployModelName').value.trim() || profile.name).toLowerCase().replace(/[^a-z0-9._-]+/g, '-').replace(/[-_.]{2,}/g, '-').replace(/^[-_.]+|[-_.]+$/g, '').slice(0,60) || 'custom-ai';
       anchor.href = url; anchor.download = 'incandescent-' + safeName + '.zip'; anchor.hidden = true;
       document.body.appendChild(anchor); anchor.click(); anchor.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 30000);
-      $('aiDeployStatus').textContent = 'Portable package downloaded. It includes the Modelfile, profile.json, and setup instructions.';
+      $('aiDeployStatus').textContent = 'Portable ZIP prepared. In the desktop app, choose a save location in the Save As window. This package contains the assistant configuration, not the Qwen model weights.';
       $('aiDeployStatus').className = 'success';
-      showToast('Portable AI package ready');
+      showToast('Portable AI package ready to save');
     } catch (error) {
       $('aiDeployStatus').textContent = friendlyError(error);
       $('aiDeployStatus').className = 'error';
@@ -2585,6 +2618,7 @@
   $('aiBuilderSave').addEventListener('click', () => saveAiProfile(false).catch(error => showToast(friendlyError(error))));
   $('aiBuilderSaveTest').addEventListener('click', () => saveAiProfile(true).catch(error => showToast(friendlyError(error))));
   $('aiDeployDone').addEventListener('click', () => closeDialogSafely($('aiDeployDialog')));
+  $('aiDeployModelName').addEventListener('input', updateAiDeployTagPreview);
   $('aiDeployInstall').addEventListener('click', () => installAiInOllama().catch(error => { $('aiDeployStatus').textContent = friendlyError(error); $('aiDeployStatus').className = 'error'; }));
   $('aiDeployExport').addEventListener('click', () => downloadPortableAi().catch(error => { $('aiDeployStatus').textContent = friendlyError(error); $('aiDeployStatus').className = 'error'; }));
   $('addCatalogProduct').addEventListener('click', () => {

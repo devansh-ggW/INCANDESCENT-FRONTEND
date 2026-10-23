@@ -244,8 +244,8 @@ def ollama_model_name(display_name: str) -> str:
     return (slug or "incandescent-ai") + ":latest"
 
 
-def build_ai_modelfile(raw_profile: Any) -> str:
-    """Build an editable Ollama Modelfile backed by the installed Qwen 3.5 2B model."""
+def build_ai_system_prompt(raw_profile: Any) -> str:
+    """Build the exact system instructions used by both the UI and exported Ollama model."""
     profile = normalize_ai_profile(raw_profile)
     if not profile or not profile.get("purpose"):
         raise ValueError("Save an AI with a name and purpose before exporting it.")
@@ -255,18 +255,22 @@ def build_ai_modelfile(raw_profile: Any) -> str:
         "You are " + safe_name + ", a capable conversational AI assistant.",
         1,
     )
-    system = base_prompt + "\n\n" + custom_ai_system_message(profile)
-    system = system.replace("\r\n", "\n").replace('"""', "'''").strip()
+    # Ollama's API takes the system prompt as a JSON string. Normalize line endings.
+    return (base_prompt + "\n\n" + custom_ai_system_message(profile)).replace("\r\n", "\n").strip()
+
+
+def build_ai_modelfile(raw_profile: Any) -> str:
+    """Build an editable Ollama Modelfile backed by the installed Qwen 3.5 2B model."""
+    system = build_ai_system_prompt(raw_profile).replace('"""', "'''")
     return "FROM " + BASE_MODEL + "\n\nPARAMETER temperature 0.7\n\nSYSTEM \"\"\"\n" + system + "\n\"\"\"\n"
 
-
-def build_ai_export_package(raw_profile: Any) -> bytes:
+def build_ai_export_package(raw_profile: Any, model_display_name: Optional[str] = None) -> bytes:
     """Create a shareable, editable configuration ZIP; model weights are excluded."""
     profile = normalize_ai_profile(raw_profile)
     if not profile:
         raise ValueError("Choose a valid AI profile before exporting it.")
     modelfile = build_ai_modelfile(profile)
-    slug = ollama_model_name(profile["name"]).split(":", 1)[0]
+    slug = ollama_model_name(model_display_name or profile["name"]).split(":", 1)[0]
     instructions = "\n".join([
         "INCANDESCENT PORTABLE AI CONFIGURATION",
         "======================================",
@@ -715,15 +719,26 @@ class Handler(BaseHTTPRequestHandler):
             if not profile or not profile.get("purpose"):
                 self.send_json(400, {"ok": False, "error": "Save an AI with a name and purpose before continuing."})
                 return
+            display_name = payload.get("model_name", profile["name"])
+            if not isinstance(display_name, str):
+                self.send_json(400, {"ok": False, "error": "Enter the name you want to use in Ollama."})
+                return
+            display_name = display_name.strip()
+            if not display_name or len(display_name) > 72:
+                self.send_json(400, {"ok": False, "error": "Enter a model name between 1 and 72 characters."})
+                return
             try:
-                model_tag = ollama_model_name(profile["name"])
+                model_tag = ollama_model_name(display_name)
+                if model_tag == "incandescent-ai:latest" and not re.search(r"[a-zA-Z0-9]", display_name):
+                    self.send_json(400, {"ok": False, "error": "Use at least one letter or number in the model name."})
+                    return
             except Exception as exc:
                 self.send_json(400, {"ok": False, "error": "Invalid AI name: " + str(exc)})
                 return
 
             if path == "/api/ai/export":
                 try:
-                    package = build_ai_export_package(profile)
+                    package = build_ai_export_package(profile, display_name)
                 except Exception as exc:
                     self.send_json(500, {"ok": False, "error": "Could not prepare the portable AI package: " + str(exc)})
                     return
@@ -750,7 +765,21 @@ class Handler(BaseHTTPRequestHandler):
             if any(name.split(":", 1)[0].casefold() == slug.casefold() for name in installed):
                 self.send_json(409, {"ok": False, "error": "Ollama already has a model named '" + slug + "'. Rename this AI to avoid overwriting an existing model."})
                 return
-            body = json_bytes({"model": model_tag, "name": model_tag, "modelfile": build_ai_modelfile(profile), "stream": False})
+            # Ollama's documented /api/create schema uses "model", "from", and
+            # "system" (plus optional "parameters"). A "modelfile" JSON field is
+            # not part of this endpoint's schema and can be silently ignored.
+            try:
+                system_prompt = build_ai_system_prompt(profile)
+            except ValueError as exc:
+                self.send_json(400, {"ok": False, "error": str(exc)})
+                return
+            body = json_bytes({
+                "model": model_tag,
+                "from": BASE_MODEL,
+                "system": system_prompt,
+                "parameters": {"temperature": 0.7},
+                "stream": False,
+            })
             request = urllib.request.Request(
                 OLLAMA_BASE + "/api/create", data=body,
                 headers={"Content-Type": "application/json", "Accept": "application/json"},
@@ -773,7 +802,13 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as exc:
                 self.send_json(502, {"ok": False, "error": "Model creation did not complete: " + str(exc)[:1500]})
                 return
-            self.send_json(200, {"ok": True, "model": model_tag, "base_model": BASE_MODEL, "message": profile["name"] + " was added to Ollama as " + model_tag + "."})
+            self.send_json(200, {
+                "ok": True,
+                "model": model_tag,
+                "base_model": BASE_MODEL,
+                "display_name": display_name,
+                "message": display_name + " was added to Ollama as " + model_tag + "."
+            })
             return
 
         if path == "/api/cancel":
