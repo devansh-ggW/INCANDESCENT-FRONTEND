@@ -50,3 +50,75 @@ def main():
 if __name__ == "__main__":
     main()
     print("PASS: custom AI Ollama Modelfile and editable ZIP export")
+
+
+def test_http_endpoints(profile):
+    """Exercise both real app routes with only the local Ollama call mocked."""
+    import threading
+    import urllib.request
+    from http.server import ThreadingHTTPServer
+    from unittest.mock import patch
+
+    base_url = None
+    original_urlopen = urllib.request.urlopen
+    original_models = server.ollama_models
+    captured = {}
+
+    def fake_urlopen(request, *args, **kwargs):
+        url = request.full_url if isinstance(request, urllib.request.Request) else str(request)
+        if url.rstrip("/") == server.OLLAMA_BASE + "/api/create":
+            captured["payload"] = json.loads(request.data.decode("utf-8"))
+            return io.BytesIO(b'{"status":"success"}')
+        return original_urlopen(request, *args, **kwargs)
+
+    server.ollama_models = lambda: [{"name": "qwen3.5:2b", "size": 100}]
+    httpd = ThreadingHTTPServer(("127.0.0.1", 0), server.Handler)
+    thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+    thread.start()
+    base_url = "http://127.0.0.1:%s" % httpd.server_address[1]
+
+    def post_json(route):
+        body = json.dumps({"profile": profile}).encode("utf-8")
+        request = urllib.request.Request(
+            base_url + route,
+            data=body,
+            headers={"Content-Type": "application/json", "Accept": "application/json"},
+            method="POST",
+        )
+        return original_urlopen(request, timeout=5)
+
+    try:
+        with patch("urllib.request.urlopen", side_effect=fake_urlopen):
+            with post_json("/api/ai/export") as response:
+                package = response.read()
+                assert response.status == 200
+                assert response.headers.get_content_type() == "application/zip"
+            with zipfile.ZipFile(io.BytesIO(package)) as archive:
+                assert set(archive.namelist()) == {"Modelfile", "profile.json", "README.txt"}
+
+            with post_json("/api/ai/install") as response:
+                result = json.loads(response.read().decode("utf-8"))
+                assert response.status == 200
+                assert result["ok"] is True
+                assert result["model"] == "store-copilot:latest"
+
+        request_body = captured.get("payload", {})
+        assert request_body.get("model") == "store-copilot:latest"
+        assert request_body.get("name") == "store-copilot:latest"
+        assert request_body.get("stream") is False
+        assert request_body.get("modelfile", "").startswith("FROM qwen3.5:2b")
+    finally:
+        httpd.shutdown()
+        thread.join(timeout=3)
+        httpd.server_close()
+        server.ollama_models = original_models
+
+
+# Run route tests after the pure packaging tests above.
+if __name__ == "__main__":
+    test_http_endpoints({
+        "name": "Store Copilot",
+        "purpose": "Help customers with product and policy questions.",
+        "personality": "Friendly and conversational.",
+    })
+    print("PASS: custom AI HTTP install/export endpoints with mocked Ollama")
