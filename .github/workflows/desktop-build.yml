@@ -22,6 +22,7 @@ on:
       - ".github/workflows/regression.yml"
       - "test_model_setup.py"
       - "test_ai_portability.py"
+      - "test_desktop_startup.py"
       - "README.md"
   pull_request:
     paths:
@@ -40,6 +41,7 @@ on:
       - ".github/workflows/regression.yml"
       - "test_model_setup.py"
       - "test_ai_portability.py"
+      - "test_desktop_startup.py"
       - "README.md"
 
 permissions:
@@ -66,8 +68,9 @@ jobs:
 
       - name: Validate Python source and model setup helpers
         run: |
-          python -m py_compile desktop_app.py model_setup.py server.py run_incandescent.py
+          python -m py_compile desktop_app.py model_setup.py server.py run_incandescent.py test_desktop_startup.py
           python test_model_setup.py
+          python test_desktop_startup.py
 
       - name: Build one-file Windows executable
         shell: cmd
@@ -142,7 +145,7 @@ jobs:
           6. The application and model setup work without a separate WebView2 install.
           7. If startup fails, check %LOCALAPPDATA%\INCANDESCENT\desktop.log.
 
-          The v1.1.0 release targets 64-bit Windows 10 and later. Windows ARM64 uses x64 emulation.
+          The v1.1.1 release targets 64-bit Windows 10 and later. Windows ARM64 uses x64 emulation.
           Windows 7/8/8.1 and 32-bit Windows are not supported by this installer.
           '@ | Set-Content -Encoding UTF8 dist/QUICK-START.txt
 
@@ -163,7 +166,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $releaseTag = "v1.1.0"
+          $releaseTag = "v1.1.1"
           $setup = "dist/installer/INCANDESCENT-Setup.exe"
           $app = "dist/INCANDESCENT.exe"
           $note = "dist/QUICK-START.txt"
@@ -171,6 +174,6 @@ jobs:
           if ($LASTEXITCODE -eq 0) {
             gh release upload $releaseTag $setup $app $note --repo $env:GITHUB_REPOSITORY --clobber
           } else {
-            gh release create $releaseTag $setup $app $note --repo $env:GITHUB_REPOSITORY --target $env:GITHUB_SHA --title "INCANDESCENT Windows 1.1.0" --notes "Windows installer with automatic Qwen setup and custom AI deployment/export. Requires an existing Ollama installation."
+            gh release create $releaseTag $setup $app $note --repo $env:GITHUB_REPOSITORY --target $env:GITHUB_SHA --title "INCANDESCENT Windows 1.1.1" --notes "Windows installer fixes old Qt WebEngine DOM compatibility, recovers an existing local Ollama service, and provides custom AI deployment/export. Requires an existing Ollama installation."
           }
           if ($LASTEXITCODE -ne 0) { throw "Could not publish the Windows release assets." }

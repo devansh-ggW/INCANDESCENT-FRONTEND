@@ -47,3 +47,8 @@ Saved custom assistants work as profiles inside INCANDESCENT. After saving, user
 The named Ollama model is created from `qwen3.5:2b`; that base model must be installed first. The exported ZIP contains assistant configuration, not the several-gigabyte Qwen weights. A recipient installs Ollama, pulls the same base model, then runs the `ollama create` command documented in the ZIP's `README.txt`.
 
 The Windows installer automatically starts downloading `qwen3.5:2b` through the existing Ollama service once Ollama is responding and the model is missing. INCANDESCENT does not install Ollama itself.
+
+
+## Windows v1.1.1 compatibility and connection recovery
+
+The bundled Qt WebEngine can be older than the Chromium engine in a regular browser. The shipped UI therefore uses a child-removal fallback rather than `Element.replaceChildren()`, which is not present in some older embedded builds. Before showing the workspace, the Windows host probes the existing local Ollama API and attempts to start `ollama.exe serve` if Ollama is installed but not listening. It never installs Ollama and leaves custom remote `OLLAMA_HOST` endpoints alone. Connection errors include the configured endpoint and underlying network reason for diagnosis.

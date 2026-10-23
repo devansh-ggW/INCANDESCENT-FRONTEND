@@ -45,6 +45,8 @@ checks = {
     "no experimental local workspace tagline": "Your local AI workspace" not in HTML and "Getting Incandescent ready" not in HTML,
     "no upload-only state remains": "state.uploading" not in HTML and "Loading project…" not in HTML,
     "sidebar sections are independently sized and scrollable": "Stable sidebar geometry" in HTML and "line-height:1.35 !important" in HTML and "overflow-y:auto !important" in HTML,
+    "Qt WebEngine can create and clear AI catalog rows": "function clearChildren(element)" in HTML and ".replaceChildren(" not in HTML,
+    "conversation heading remains legible": "text-transform:none !important" in HTML and "text-overflow:ellipsis !important" in HTML,
     "AI creator catches modal and save failures": "function showDialogSafely(dialog)" in HTML and "Could not open AI creator:" in HTML,
     "custom AI offers local install and portable export": 'id="aiDeployInstall"' in HTML and 'id="aiDeployExport"' in HTML and "Download portable files" in HTML,
     "custom AI calls both backend deployment actions": "'/api/ai/install'" in HTML and "'/api/ai/export'" in HTML,
