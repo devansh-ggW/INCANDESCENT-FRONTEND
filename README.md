@@ -4,9 +4,9 @@ A local desktop AI workspace powered by Ollama, with conversational chat, code h
 
 ## Windows download
 
-**[Download the INCANDESCENT v1.1.1 installer](https://github.com/devansh-ggW/INCANDESCENT-FRONTEND/releases/download/v1.1.1/INCANDESCENT-Setup.exe)**
+**[Download the INCANDESCENT v1.1.2 installer](https://github.com/devansh-ggW/INCANDESCENT-FRONTEND/releases/download/v1.1.2/INCANDESCENT-Setup.exe)**
 
-[Release page and files](https://github.com/devansh-ggW/INCANDESCENT-FRONTEND/releases/tag/v1.1.1)
+[Release page and files](https://github.com/devansh-ggW/INCANDESCENT-FRONTEND/releases/tag/v1.1.2)
 
 The installer uses your existing Ollama installation; it does not install Ollama. When Ollama is responding, setup automatically downloads `qwen3.5:2b` if missing. The app also attempts to start your already-installed local Ollama service if it is not listening. The model download requires internet access and several gigabytes of storage.
 
@@ -14,7 +14,7 @@ The installer uses your existing Ollama installation; it does not install Ollama
 
 After creating and saving an AI profile, choose either:
 
-- **Add to Ollama** to create a local model named from the AI's name, using `qwen3.5:2b`.
+- **Add to Ollama** to choose a model name such as `dawg` or `dig-it-up`, then create it locally using `qwen3.5:2b`. The saved AI list also has a direct install icon next to each assistant.
 - **Download portable files** to export a ZIP containing an editable `Modelfile`, profile metadata, and setup instructions. The ZIP does not contain the multi-gigabyte model weights; another PC needs Ollama and `qwen3.5:2b`.
 
 Custom profiles configure instructions and context on top of a base model; this is not model-weight fine-tuning.

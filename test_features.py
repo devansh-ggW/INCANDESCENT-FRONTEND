@@ -49,6 +49,8 @@ checks = {
     "conversation heading remains legible": "text-transform:none !important" in HTML and "text-overflow:ellipsis !important" in HTML,
     "AI creator catches modal and save failures": "function showDialogSafely(dialog)" in HTML and "Could not open AI creator:" in HTML,
     "custom AI offers local install and portable export": 'id="aiDeployInstall"' in HTML and 'id="aiDeployExport"' in HTML and "Download portable files" in HTML,
+    "every saved AI row has an Ollama install icon": 'data-install-ai="' in HTML and "ai-profile-install" in HTML,
+    "Ollama model name is editable in the install popup": 'id="aiDeployModelName"' in HTML and "Name in Ollama" in HTML and "model_name:requestedName" in HTML,
     "custom AI calls both backend deployment actions": "'/api/ai/install'" in HTML and "'/api/ai/export'" in HTML,
     "AI prompt says not to explain slang unless asked": "Never quote, define, analyze, or explain slang unless the user asks" in SERVER,
     "no API-key endpoint remains in backend": "/api/keys" not in SERVER and "v1/chat/completions" not in SERVER,

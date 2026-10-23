@@ -202,7 +202,7 @@ def main() -> int:
     try:
         from PyQt5.QtCore import Qt, QUrl
         from PyQt5.QtGui import QDesktopServices, QIcon
-        from PyQt5.QtWidgets import QApplication, QMainWindow
+        from PyQt5.QtWidgets import QApplication, QFileDialog, QMainWindow, QMessageBox
         from PyQt5.QtWebEngineWidgets import (
             QWebEnginePage,
             QWebEngineProfile,
@@ -299,6 +299,45 @@ def main() -> int:
         window.setWindowTitle(APP_TITLE)
         window.resize(1280, 850)
         window.setMinimumSize(900, 600)
+
+        def handle_download_requested(download) -> None:
+            """Save WebEngine-triggered downloads through a predictable native dialog."""
+            try:
+                suggested_name = str(download.downloadFileName() or "incandescent-download")
+                downloads_dir = Path.home() / "Downloads"
+                if not downloads_dir.is_dir():
+                    downloads_dir = Path.home()
+                default_path = downloads_dir / suggested_name
+                selected_path, _ = QFileDialog.getSaveFileName(
+                    window,
+                    "Save INCANDESCENT download",
+                    str(default_path),
+                    "Portable AI packages (*.zip);;All files (*.*)",
+                )
+                if not selected_path:
+                    download.cancel()
+                    logging.info("User cancelled download: %s", suggested_name)
+                    return
+                destination = Path(selected_path)
+                if not destination.suffix and Path(suggested_name).suffix:
+                    destination = destination.with_suffix(Path(suggested_name).suffix)
+                download.setPath(str(destination))
+                download.accept()
+                logging.info("Accepted WebEngine download to %s", destination)
+            except Exception as exc:
+                logging.exception("Could not prepare the WebEngine download destination.")
+                try:
+                    download.cancel()
+                except Exception:
+                    pass
+                QMessageBox.warning(
+                    window,
+                    APP_TITLE,
+                    "INCANDESCENT could not start this download. Check desktop.log for details.\n\n" + str(exc),
+                )
+
+        profile.downloadRequested.connect(handle_download_requested)
+
         icon = resource_path("incandescent.ico")
         if icon.is_file():
             window.setWindowIcon(QIcon(str(icon)))

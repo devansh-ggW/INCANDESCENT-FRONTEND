@@ -857,6 +857,17 @@
     .ai-profile-actions { display:flex; gap:3px; }
     .ai-profile-actions button { width:26px; height:27px; border:1px solid #e5d5c7; border-radius:7px; background:#fffdf9; color:#7c5a4d; cursor:pointer; }
     .ai-profile-actions button:hover { border-color:#bf8f7e; color:#813d32; background:#fff5ed; }
+    .ai-profile-actions button[data-install-ai] { display:grid; place-items:center; }
+    .ai-profile-actions button[data-install-ai] svg { width:14px; height:14px; display:block; }
+    .ai-profile-actions button[data-install-ai].has-model { color:#276749; border-color:#b8d9c5; }
+    .ai-profile-actions button[data-install-ai].has-model:hover { color:#1d5a3b; background:#edf8f0; border-color:#8fc4a1; }
+    .ai-deploy-name-field { display:flex; flex-direction:column; gap:6px; margin:14px 0 3px; }
+    .ai-deploy-name-field label { color:#2f3035; font-size:12px; font-weight:650; }
+    #aiDeployModelName { width:100%; min-width:0; height:40px; box-sizing:border-box; padding:0 11px; border:1px solid #d7d8dc; border-radius:8px; background:#fff; color:#202124; font-family:inherit; font-size:13px; font-weight:500; outline:none; }
+    #aiDeployModelName:focus { border-color:#854235; box-shadow:0 0 0 3px rgba(133,66,53,.11); }
+    .ai-deploy-name-help { margin:0; color:#777a82; font-size:10px; line-height:1.5; }
+    #aiDeployStatus[aria-busy="true"]::before { content:""; display:inline-block; width:10px; height:10px; border:2px solid #d8d8dc; border-top-color:#854235; border-radius:50%; margin-right:7px; vertical-align:-2px; animation:ai-deploy-spin .8s linear infinite; }
+    @keyframes ai-deploy-spin { to { transform:rotate(360deg); } }
     .active-ai-banner { flex:0 0 auto; display:flex; align-items:center; gap:9px; margin:0 0 9px; padding:9px 12px; border:1px solid #ead3c2; border-radius:11px; background:linear-gradient(105deg,#fff9f1,#f2e2d3); color:#6d4437; font-size:11px; }
     .active-ai-symbol { display:grid; place-items:center; width:25px; height:25px; border-radius:8px; background:#874637; color:#fff9f1; font-size:14px; }
     .active-ai-copy { flex:1; min-width:0; }
@@ -1191,8 +1202,13 @@
     <div class="ai-deploy-dialog-content">
       <div class="eyebrow">AI ready</div>
       <h2 id="aiDeployTitle">Choose how to use your AI</h2>
-      <p class="ai-deploy-description" id="aiDeployDescription">Your assistant is saved in this workspace. You can add it to Ollama or export an editable package.</p>
-      <div class="ai-deploy-note">The portable package contains editable configuration, not the multi-gigabyte Qwen weights. Other computers need Ollama and the Qwen 3.5 2B base model.</div>
+      <p class="ai-deploy-description" id="aiDeployDescription">Give your assistant a model name, then add it straight to your local Ollama list. You can also download the portable configuration.</p>
+      <div class="ai-deploy-name-field">
+        <label for="aiDeployModelName">Name in Ollama</label>
+        <input id="aiDeployModelName" type="text" maxlength="100" autocomplete="off" spellcheck="false" placeholder="e.g. dawg or dig-it-up">
+        <p class="ai-deploy-name-help">Letters, numbers, dots, underscores and hyphens are supported. Spaces become hyphens. This name will appear in <code>ollama list</code>.</p>
+      </div>
+      <div class="ai-deploy-note">Add to Ollama reuses the installed Qwen 3.5 2B weights; it does not download them again. The portable ZIP contains editable configuration, not the multi-gigabyte base-model weights. Another PC needs Ollama and Qwen 3.5 2B.</div>
       <div id="aiDeployStatus" role="status" aria-live="polite"></div>
       <div class="ai-deploy-actions">
         <button class="ai-deploy-secondary" id="aiDeployDone" type="button">Done</button>
@@ -1917,11 +1933,18 @@
     list.innerHTML = state.customAIs.map(profile => {
       const selected = state.conversationAiProfileId === profile.id;
       const purpose = profile.purpose || 'Personal assistant';
+      const installedTag = String(profile.ollama_model || '');
+      const installTitle = installedTag ? 'Manage Ollama model ' + installedTag : 'Add ' + profile.name + ' to Ollama';
+      const installClass = installedTag ? ' has-model' : '';
       return '<div class="ai-profile-row ' + (selected ? 'selected' : '') + '">' +
         '<button class="ai-profile-use" type="button" data-use-ai="' + escapeHtml(profile.id) + '" title="Start a chat with ' + escapeHtml(profile.name) + '"><strong>' + escapeHtml(profile.name) + '</strong><span>' + escapeHtml(purpose) + '</span></button>' +
-        '<div class="ai-profile-actions"><button type="button" data-edit-ai="' + escapeHtml(profile.id) + '" title="Edit ' + escapeHtml(profile.name) + '" aria-label="Edit ' + escapeHtml(profile.name) + '">✎</button><button type="button" data-delete-ai="' + escapeHtml(profile.id) + '" title="Delete ' + escapeHtml(profile.name) + '" aria-label="Delete ' + escapeHtml(profile.name) + '">×</button></div></div>';
+        '<div class="ai-profile-actions">' +
+        '<button class="ai-profile-install' + installClass + '" type="button" data-install-ai="' + escapeHtml(profile.id) + '" title="' + escapeHtml(installTitle) + '" aria-label="' + escapeHtml(installTitle) + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11m-4-4 4 4 4-4M5 19h14"/></svg></button>' +
+        '<button type="button" data-edit-ai="' + escapeHtml(profile.id) + '" title="Edit ' + escapeHtml(profile.name) + '" aria-label="Edit ' + escapeHtml(profile.name) + '">✎</button>' +
+        '<button type="button" data-delete-ai="' + escapeHtml(profile.id) + '" title="Delete ' + escapeHtml(profile.name) + '" aria-label="Delete ' + escapeHtml(profile.name) + '">×</button></div></div>';
     }).join('');
     list.querySelectorAll('[data-use-ai]').forEach(button => button.addEventListener('click', () => startAiConversation(button.dataset.useAi)));
+    list.querySelectorAll('[data-install-ai]').forEach(button => button.addEventListener('click', () => openAiDeployOptions(button.dataset.installAi)));
     list.querySelectorAll('[data-edit-ai]').forEach(button => button.addEventListener('click', () => openAiBuilder(button.dataset.editAi)));
     list.querySelectorAll('[data-delete-ai]').forEach(button => button.addEventListener('click', () => deleteAiProfile(button.dataset.deleteAi)));
   }
@@ -2023,57 +2046,84 @@
     return Array.from(bytes, value => value.toString(16).padStart(2,'0')).join('');
   }
 
+  function suggestedOllamaName(displayName) {
+    const value = String(displayName || '').trim().toLowerCase()
+      .replace(/[^a-z0-9._-]+/g, '-')
+      .replace(/[-_.]{2,}/g, '-')
+      .replace(/^[-_.]+|[-_.]+$/g, '')
+      .slice(0, 60);
+    return value || 'my-ai';
+  }
+
+  function setAiDeployStatus(message, type, busy) {
+    const status = $('aiDeployStatus');
+    status.textContent = message || '';
+    status.className = type || '';
+    status.setAttribute('aria-busy', busy ? 'true' : 'false');
+  }
+
   function openAiDeployOptions(profileId) {
     const profile = getAiProfile(profileId);
     if (!profile) return;
     state.pendingDeploymentProfileId = profile.id;
-    $('aiDeployTitle').textContent = 'Finish setting up ' + profile.name;
-    $('aiDeployDescription').textContent = 'Your AI is saved in this workspace. Add a named model to Ollama or download an editable package to share and modify.';
-    $('aiDeployStatus').textContent = '';
-    $('aiDeployStatus').className = '';
+    $('aiDeployTitle').textContent = 'Add ' + profile.name + ' to Ollama';
+    $('aiDeployDescription').textContent = 'Choose the name this model will use in Ollama. This does not rename the saved assistant inside INCANDESCENT.';
+    const rememberedTag = String(profile.ollama_model || '');
+    $('aiDeployModelName').value = rememberedTag ? rememberedTag.replace(/:[^:]+$/, '') : suggestedOllamaName(profile.name);
+    setAiDeployStatus(rememberedTag ? 'Last added to Ollama as ' + rememberedTag + '. Choose a different name to add a separate copy.' : '', '', false);
     $('aiDeployInstall').disabled = false;
     $('aiDeployExport').disabled = false;
-    $('aiDeployInstall').textContent = 'Add to Ollama';
+    $('aiDeployModelName').disabled = false;
+    $('aiDeployInstall').textContent = rememberedTag ? 'Add another copy' : 'Add to Ollama';
     $('aiDeployExport').textContent = 'Download portable files';
     showDialogSafely($('aiDeployDialog'));
+    $('aiDeployModelName').focus();
+    $('aiDeployModelName').select();
   }
 
   async function installAiInOllama() {
     const profile = getAiProfile(state.pendingDeploymentProfileId);
-    if (!profile) { $('aiDeployStatus').textContent = 'This AI profile could not be found. Close this window and save it again.'; $('aiDeployStatus').className = 'error'; return; }
+    if (!profile) { setAiDeployStatus('This AI profile could not be found. Close this window and save it again.', 'error', false); return; }
+    const requestedName = $('aiDeployModelName').value.trim();
+    if (!requestedName) {
+      setAiDeployStatus('Enter the name you want to see in ollama list.', 'error', false);
+      $('aiDeployModelName').focus();
+      return;
+    }
     const button = $('aiDeployInstall');
-    button.disabled = true; $('aiDeployExport').disabled = true;
-    $('aiDeployStatus').className = '';
-    $('aiDeployStatus').textContent = 'Creating a local Ollama model… This may take a little while.';
+    button.disabled = true; $('aiDeployExport').disabled = true; $('aiDeployModelName').disabled = true;
+    setAiDeployStatus('Adding ' + requestedName + ' to Ollama… Reusing the installed Qwen weights. This may take a moment.', '', true);
     try {
       const response = await fetch('/api/ai/install', {
         method:'POST', headers:{'Content-Type':'application/json', Accept:'application/json'},
-        body:JSON.stringify({profile})
+        body:JSON.stringify({profile, model_name:requestedName})
       });
       const data = await readResponse(response);
-      $('aiDeployStatus').textContent = data.message || ('Added to Ollama as ' + data.model + '.');
-      $('aiDeployStatus').className = 'success';
+      profile.ollama_model = data.model;
+      const saved = await persistAiProfiles();
+      renderAiProfiles();
+      setAiDeployStatus(data.message || ('Added to Ollama as ' + data.model + '.'), 'success', false);
       button.textContent = 'Added to Ollama';
-      showToast(profile.name + ' added to Ollama');
+      showToast(profile.name + ' added to Ollama as ' + data.model);
+      if (!saved) showToast('Model added, but its name could not be saved to this app profile.');
     } catch (error) {
-      $('aiDeployStatus').textContent = friendlyError(error);
-      $('aiDeployStatus').className = 'error';
+      setAiDeployStatus(friendlyError(error), 'error', false);
     } finally {
-      button.disabled = false; $('aiDeployExport').disabled = false;
+      button.disabled = false; $('aiDeployExport').disabled = false; $('aiDeployModelName').disabled = false;
     }
   }
 
   async function downloadPortableAi() {
     const profile = getAiProfile(state.pendingDeploymentProfileId);
-    if (!profile) { $('aiDeployStatus').textContent = 'This AI profile could not be found. Close this window and save it again.'; $('aiDeployStatus').className = 'error'; return; }
+    if (!profile) { setAiDeployStatus('This AI profile could not be found. Close this window and save it again.', 'error', false); return; }
+    const requestedName = $('aiDeployModelName').value.trim() || profile.name;
     const button = $('aiDeployExport');
-    button.disabled = true; $('aiDeployInstall').disabled = true;
-    $('aiDeployStatus').className = '';
-    $('aiDeployStatus').textContent = 'Preparing your editable AI package…';
+    button.disabled = true; $('aiDeployInstall').disabled = true; $('aiDeployModelName').disabled = true;
+    setAiDeployStatus('Preparing your editable AI package…', '', true);
     try {
       const response = await fetch('/api/ai/export', {
         method:'POST', headers:{'Content-Type':'application/json', Accept:'application/zip'},
-        body:JSON.stringify({profile})
+        body:JSON.stringify({profile, model_name:requestedName})
       });
       if (!response.ok) {
         let detail = 'The export could not be prepared.';
@@ -2084,18 +2134,15 @@
       if (!blob.size) throw new Error('The export package is empty. Try again.');
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
-      const safeName = profile.name.toLowerCase().replace(/[^a-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '').slice(0,60) || 'custom-ai';
-      anchor.href = url; anchor.download = 'incandescent-' + safeName + '.zip'; anchor.hidden = true;
+      anchor.href = url; anchor.download = 'incandescent-' + suggestedOllamaName(requestedName) + '.zip'; anchor.hidden = true;
       document.body.appendChild(anchor); anchor.click(); anchor.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 30000);
-      $('aiDeployStatus').textContent = 'Portable package downloaded. It includes the Modelfile, profile.json, and setup instructions.';
-      $('aiDeployStatus').className = 'success';
+      setAiDeployStatus('Portable package downloaded. It contains the Modelfile, profile.json, and setup instructions. Model weights must be pulled separately on other computers.', 'success', false);
       showToast('Portable AI package ready');
     } catch (error) {
-      $('aiDeployStatus').textContent = friendlyError(error);
-      $('aiDeployStatus').className = 'error';
+      setAiDeployStatus(friendlyError(error), 'error', false);
     } finally {
-      button.disabled = false; $('aiDeployInstall').disabled = false;
+      button.disabled = false; $('aiDeployInstall').disabled = false; $('aiDeployModelName').disabled = false;
     }
   }
 
@@ -2585,8 +2632,11 @@
   $('aiBuilderSave').addEventListener('click', () => saveAiProfile(false).catch(error => showToast(friendlyError(error))));
   $('aiBuilderSaveTest').addEventListener('click', () => saveAiProfile(true).catch(error => showToast(friendlyError(error))));
   $('aiDeployDone').addEventListener('click', () => closeDialogSafely($('aiDeployDialog')));
-  $('aiDeployInstall').addEventListener('click', () => installAiInOllama().catch(error => { $('aiDeployStatus').textContent = friendlyError(error); $('aiDeployStatus').className = 'error'; }));
-  $('aiDeployExport').addEventListener('click', () => downloadPortableAi().catch(error => { $('aiDeployStatus').textContent = friendlyError(error); $('aiDeployStatus').className = 'error'; }));
+  $('aiDeployInstall').addEventListener('click', () => installAiInOllama().catch(error => setAiDeployStatus(friendlyError(error), 'error', false)));
+  $('aiDeployExport').addEventListener('click', () => downloadPortableAi().catch(error => setAiDeployStatus(friendlyError(error), 'error', false)));
+  $('aiDeployModelName').addEventListener('keydown', event => {
+    if (event.key === 'Enter') { event.preventDefault(); installAiInOllama().catch(error => setAiDeployStatus(friendlyError(error), 'error', false)); }
+  });
   $('addCatalogProduct').addEventListener('click', () => {
     const list = $('aiCatalogList');
     if (list.querySelectorAll('[data-catalog-row]').length >= 200) { $('aiBuilderStatus').textContent = 'You can add up to 200 products to this AI profile.'; return; }

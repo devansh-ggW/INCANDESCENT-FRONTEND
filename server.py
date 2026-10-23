@@ -238,10 +238,15 @@ def custom_ai_system_message(profile: Dict[str, Any]) -> str:
 
 
 def ollama_model_name(display_name: str) -> str:
-    """Create a stable Ollama tag from a visible AI name."""
-    slug = re.sub(r"[^a-z0-9._-]+", "-", str(display_name or "").strip().lower())
+    """Validate and normalize a user-supplied name into a safe Ollama model tag."""
+    raw = str(display_name or "").strip().lower()
+    if raw.endswith(":latest"):
+        raw = raw[:-7]
+    slug = re.sub(r"[^a-z0-9._-]+", "-", raw)
     slug = re.sub(r"[-_.]{2,}", "-", slug).strip("-._")[:60]
-    return (slug or "incandescent-ai") + ":latest"
+    if not slug:
+        raise ValueError("Use a model name containing at least one letter or number.")
+    return slug + ":latest"
 
 
 def build_ai_modelfile(raw_profile: Any) -> str:
@@ -260,13 +265,14 @@ def build_ai_modelfile(raw_profile: Any) -> str:
     return "FROM " + BASE_MODEL + "\n\nPARAMETER temperature 0.7\n\nSYSTEM \"\"\"\n" + system + "\n\"\"\"\n"
 
 
-def build_ai_export_package(raw_profile: Any) -> bytes:
+def build_ai_export_package(raw_profile: Any, model_name: Optional[str] = None) -> bytes:
     """Create a shareable, editable configuration ZIP; model weights are excluded."""
     profile = normalize_ai_profile(raw_profile)
     if not profile:
         raise ValueError("Choose a valid AI profile before exporting it.")
+    requested_name = model_name or profile["name"]
+    slug = ollama_model_name(requested_name).split(":", 1)[0]
     modelfile = build_ai_modelfile(profile)
-    slug = ollama_model_name(profile["name"]).split(":", 1)[0]
     instructions = "\n".join([
         "INCANDESCENT PORTABLE AI CONFIGURATION",
         "======================================",
@@ -715,15 +721,16 @@ class Handler(BaseHTTPRequestHandler):
             if not profile or not profile.get("purpose"):
                 self.send_json(400, {"ok": False, "error": "Save an AI with a name and purpose before continuing."})
                 return
+            requested_model_name = payload.get("model_name") or profile["name"]
             try:
-                model_tag = ollama_model_name(profile["name"])
+                model_tag = ollama_model_name(requested_model_name)
             except Exception as exc:
-                self.send_json(400, {"ok": False, "error": "Invalid AI name: " + str(exc)})
+                self.send_json(400, {"ok": False, "error": "Invalid Ollama model name: " + str(exc)})
                 return
 
             if path == "/api/ai/export":
                 try:
-                    package = build_ai_export_package(profile)
+                    package = build_ai_export_package(profile, requested_model_name)
                 except Exception as exc:
                     self.send_json(500, {"ok": False, "error": "Could not prepare the portable AI package: " + str(exc)})
                     return
@@ -759,8 +766,9 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 with urllib.request.urlopen(request, timeout=900) as response:
                     data = json.loads(response.read(MAX_MODEL_RESPONSE_BYTES).decode("utf-8"))
-                if not isinstance(data, dict) or data.get("error"):
-                    detail = str(data.get("error", "Ollama did not confirm model creation.")) if isinstance(data, dict) else "Unexpected response from Ollama."
+                if (not isinstance(data, dict) or data.get("error")
+                        or (data.get("status") and data.get("status") not in {"success", "complete"})):
+                    detail = str(data.get("error") or data.get("status") or "Ollama did not confirm model creation.") if isinstance(data, dict) else "Unexpected response from Ollama."
                     self.send_json(502, {"ok": False, "error": detail})
                     return
             except urllib.error.HTTPError as exc:

@@ -19,6 +19,19 @@ def main():
     profile = server.normalize_ai_profile(raw_profile)
     assert profile is not None
     assert server.ollama_model_name(profile["name"]) == "store-copilot:latest"
+    assert server.ollama_model_name("Dawg") == "dawg:latest"
+    assert server.ollama_model_name("Dig It Up!") == "dig-it-up:latest"
+    try:
+        server.ollama_model_name(" !! ")
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("empty normalized model names must be rejected")
+
+    named_package = server.build_ai_export_package(profile, "Dawg")
+    with zipfile.ZipFile(io.BytesIO(named_package)) as named_archive:
+        named_readme = named_archive.read("README.txt").decode("utf-8")
+        assert "ollama create dawg -f Modelfile" in named_readme
 
     modelfile = server.build_ai_modelfile(profile)
     assert modelfile.startswith("FROM qwen3.5:2b" + chr(10))
@@ -78,7 +91,7 @@ def test_http_endpoints(profile):
     base_url = "http://127.0.0.1:%s" % httpd.server_address[1]
 
     def post_json(route):
-        body = json.dumps({"profile": profile}).encode("utf-8")
+        body = json.dumps({"profile": profile, "model_name": "Dawg"}).encode("utf-8")
         request = urllib.request.Request(
             base_url + route,
             data=body,
@@ -100,11 +113,11 @@ def test_http_endpoints(profile):
                 result = json.loads(response.read().decode("utf-8"))
                 assert response.status == 200
                 assert result["ok"] is True
-                assert result["model"] == "store-copilot:latest"
+                assert result["model"] == "dawg:latest"
 
         request_body = captured.get("payload", {})
-        assert request_body.get("model") == "store-copilot:latest"
-        assert request_body.get("name") == "store-copilot:latest"
+        assert request_body.get("model") == "dawg:latest"
+        assert request_body.get("name") == "dawg:latest"
         assert request_body.get("stream") is False
         assert request_body.get("modelfile", "").startswith("FROM qwen3.5:2b")
     finally:
