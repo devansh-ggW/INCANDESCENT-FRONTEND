@@ -54,11 +54,11 @@ LIMITATIONS
 This Windows installer does not bundle Ollama or model weights. The model is downloaded through the user's own Ollama installation. This build is not code-signed. Model quality and speed depend on the installed model and computer hardware. Real-device testing is required before claiming support for any Windows release/architecture.
 
 
-LATEST WINDOWS INSTALLER (v1.1.1)
+LATEST WINDOWS INSTALLER (v1.1.2)
 Download the real installer from GitHub Releases:
-https://github.com/devansh-ggW/INCANDESCENT-FRONTEND/releases/download/v1.1.1/INCANDESCENT-Setup.exe
+https://github.com/devansh-ggW/INCANDESCENT-FRONTEND/releases/download/v1.1.2/INCANDESCENT-Setup.exe
 
 Standalone app:
-https://github.com/devansh-ggW/INCANDESCENT-FRONTEND/releases/download/v1.1.1/INCANDESCENT.exe
+https://github.com/devansh-ggW/INCANDESCENT-FRONTEND/releases/download/v1.1.2/INCANDESCENT.exe
 
-After saving a custom AI, add it to Ollama under a name derived from the AI's name, or export an editable ZIP with the Modelfile, profile metadata and instructions. The ZIP does not include the multi-gigabyte model weights. Another computer needs Ollama and qwen3.5:2b.
+After saving a custom AI, click its install-arrow icon or choose Add to Ollama, enter a model name such as dawg or dig-it-up, and press Add. The portable ZIP uses the selected name in the commands shown in its setup instructions. The ZIP does not include the multi-gigabyte model weights. Another computer needs Ollama and qwen3.5:2b.
