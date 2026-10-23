@@ -8,26 +8,34 @@ import zipfile
 import server
 
 
-def main():
-    raw_profile = {
+def make_profile():
+    return {
         "name": "Store Copilot",
         "purpose": "Help customers with product and policy questions.",
         "personality": "Friendly and conversational. This includes " + chr(34) * 3 + " in user input.",
         "business_name": "Example Shop",
         "catalog": [{"name": "Classic Tee", "price": "₹799", "category": "T-shirts", "description": "Cotton tee"}],
     }
-    profile = server.normalize_ai_profile(raw_profile)
+
+
+def test_package_builders():
+    profile = server.normalize_ai_profile(make_profile())
     assert profile is not None
     assert server.ollama_model_name(profile["name"]) == "store-copilot:latest"
+    assert server.ollama_model_name("Dig It Up") == "dig-it-up:latest"
+    assert server.ollama_model_name("  DAWG  ") == "dawg:latest"
+
+    prompt = server.build_ai_system_prompt(profile)
+    assert "You are Store Copilot" in prompt
+    assert "Never quote, define, analyze, or explain slang unless the user asks" in prompt
 
     modelfile = server.build_ai_modelfile(profile)
     assert modelfile.startswith("FROM qwen3.5:2b" + chr(10))
     assert 'SYSTEM """' in modelfile
     assert modelfile.count('"""') == 2, "profile text must not close the SYSTEM delimiter"
     assert "This includes " + chr(34) * 3 in profile["personality"]
-    assert "Never quote, define, analyze, or explain slang unless the user asks" in modelfile
 
-    package = server.build_ai_export_package(profile)
+    package = server.build_ai_export_package(profile, "Dig It Up")
     assert package.startswith(b"PK"), "export must be a ZIP archive"
     with zipfile.ZipFile(io.BytesIO(package)) as archive:
         assert set(archive.namelist()) == {"Modelfile", "profile.json", "README.txt"}
@@ -36,7 +44,7 @@ def main():
         exported_modelfile = archive.read("Modelfile").decode("utf-8")
         assert exported_modelfile.startswith("FROM qwen3.5:2b")
         readme = archive.read("README.txt").decode("utf-8")
-        assert "ollama create store-copilot -f Modelfile" in readme
+        assert "ollama create dig-it-up -f Modelfile" in readme
         assert "not the multi-gigabyte model weights" in readme
 
     try:
@@ -47,19 +55,14 @@ def main():
         raise AssertionError("profiles without a purpose must not export")
 
 
-if __name__ == "__main__":
-    main()
-    print("PASS: custom AI Ollama Modelfile and editable ZIP export")
-
-
-def test_http_endpoints(profile):
+def test_http_endpoints():
     """Exercise both real app routes with only the local Ollama call mocked."""
     import threading
     import urllib.request
     from http.server import ThreadingHTTPServer
     from unittest.mock import patch
 
-    base_url = None
+    profile = make_profile()
     original_urlopen = urllib.request.urlopen
     original_models = server.ollama_models
     captured = {}
@@ -77,8 +80,9 @@ def test_http_endpoints(profile):
     thread.start()
     base_url = "http://127.0.0.1:%s" % httpd.server_address[1]
 
-    def post_json(route):
-        body = json.dumps({"profile": profile}).encode("utf-8")
+    def post_json(route, model_name="Dig It Up"):
+        payload = {"profile": profile, "model_name": model_name}
+        body = json.dumps(payload).encode("utf-8")
         request = urllib.request.Request(
             base_url + route,
             data=body,
@@ -95,18 +99,23 @@ def test_http_endpoints(profile):
                 assert response.headers.get_content_type() == "application/zip"
             with zipfile.ZipFile(io.BytesIO(package)) as archive:
                 assert set(archive.namelist()) == {"Modelfile", "profile.json", "README.txt"}
+                readme = archive.read("README.txt").decode("utf-8")
+                assert "ollama create dig-it-up -f Modelfile" in readme
 
             with post_json("/api/ai/install") as response:
                 result = json.loads(response.read().decode("utf-8"))
                 assert response.status == 200
                 assert result["ok"] is True
-                assert result["model"] == "store-copilot:latest"
+                assert result["model"] == "dig-it-up:latest"
+                assert result["display_name"] == "Dig It Up"
 
         request_body = captured.get("payload", {})
-        assert request_body.get("model") == "store-copilot:latest"
-        assert request_body.get("name") == "store-copilot:latest"
+        assert request_body.get("model") == "dig-it-up:latest"
+        assert request_body.get("from") == "qwen3.5:2b"
+        assert request_body.get("parameters") == {"temperature": 0.7}
         assert request_body.get("stream") is False
-        assert request_body.get("modelfile", "").startswith("FROM qwen3.5:2b")
+        assert "IDENTITY: Your name is exactly Store Copilot" in request_body.get("system", "")
+        assert "modelfile" not in request_body, "use Ollama's documented /api/create schema"
     finally:
         httpd.shutdown()
         thread.join(timeout=3)
@@ -114,11 +123,8 @@ def test_http_endpoints(profile):
         server.ollama_models = original_models
 
 
-# Run route tests after the pure packaging tests above.
 if __name__ == "__main__":
-    test_http_endpoints({
-        "name": "Store Copilot",
-        "purpose": "Help customers with product and policy questions.",
-        "personality": "Friendly and conversational.",
-    })
-    print("PASS: custom AI HTTP install/export endpoints with mocked Ollama")
+    test_package_builders()
+    print("PASS: custom AI Modelfile and editable portable ZIP")
+    test_http_endpoints()
+    print("PASS: named Ollama install uses documented create API fields")

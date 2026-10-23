@@ -202,7 +202,7 @@ def main() -> int:
     try:
         from PyQt5.QtCore import Qt, QUrl
         from PyQt5.QtGui import QDesktopServices, QIcon
-        from PyQt5.QtWidgets import QApplication, QMainWindow
+        from PyQt5.QtWidgets import QApplication, QFileDialog, QMainWindow
         from PyQt5.QtWebEngineWidgets import (
             QWebEnginePage,
             QWebEngineProfile,
@@ -306,6 +306,40 @@ def main() -> int:
         view = QWebEngineView(window)
         page = LocalOnlyPage(profile, view)
         view.setPage(page)
+
+        # Qt WebEngine rejects downloads unless the profile explicitly handles
+        # downloadRequested and accepts the item. This is required for portable
+        # AI ZIPs created from a browser Blob URL.
+        def handle_download(download) -> None:
+            try:
+                suggested_name = Path(str(download.suggestedFileName() or "incandescent-ai.zip")).name
+                downloads_dir = Path.home() / "Downloads"
+                downloads_dir.mkdir(parents=True, exist_ok=True)
+                destination, _ = QFileDialog.getSaveFileName(
+                    window,
+                    "Save INCANDESCENT file",
+                    str(downloads_dir / suggested_name),
+                    "ZIP packages (*.zip);;All files (*)",
+                )
+                if not destination:
+                    download.cancel()
+                    logging.info("User cancelled download: %s", suggested_name)
+                    return
+
+                target = Path(destination).expanduser()
+                target.parent.mkdir(parents=True, exist_ok=True)
+                download.setDownloadDirectory(str(target.parent))
+                download.setDownloadFileName(target.name)
+                download.accept()
+                logging.info("Accepted browser download: %s", target)
+            except Exception:
+                logging.exception("Could not prepare the requested download.")
+                try:
+                    download.cancel()
+                except Exception:
+                    pass
+
+        profile.downloadRequested.connect(handle_download)
         settings = view.settings()
         settings.setAttribute(QWebEngineSettings.JavascriptEnabled, True)
         settings.setAttribute(QWebEngineSettings.LocalStorageEnabled, True)

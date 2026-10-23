@@ -45,6 +45,15 @@ class OllamaStartupTests(unittest.TestCase):
         urlopen.assert_not_called()
         popen.assert_not_called()
 
+    def test_downloads_are_explicitly_accepted_and_saved(self):
+        source = Path(__file__).with_name("desktop_app.py").read_text(encoding="utf-8")
+        self.assertIn("profile.downloadRequested.connect(handle_download)", source)
+        self.assertIn("QFileDialog.getSaveFileName(", source)
+        self.assertIn("download.setDownloadDirectory(str(target.parent))", source)
+        self.assertIn("download.setDownloadFileName(target.name)", source)
+        self.assertIn("download.accept()", source)
+        self.assertIn("download.cancel()", source)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -52,3 +52,10 @@ The Windows installer automatically starts downloading `qwen3.5:2b` through the 
 ## Windows v1.1.1 compatibility and connection recovery
 
 The bundled Qt WebEngine can be older than the Chromium engine in a regular browser. The shipped UI therefore uses a child-removal fallback rather than `Element.replaceChildren()`, which is not present in some older embedded builds. Before showing the workspace, the Windows host probes the existing local Ollama API and attempts to start `ollama.exe serve` if Ollama is installed but not listening. It never installs Ollama and leaves custom remote `OLLAMA_HOST` endpoints alone. Connection errors include the configured endpoint and underlying network reason for diagnosis.
+
+
+## Windows v1.1.2 — named Ollama install and portable ZIP downloads
+
+Every saved custom AI now has a small direct-install action in the sidebar. It opens a name prompt with a live preview of the resulting Ollama tag, for example `Dig It Up` becomes `dig-it-up:latest`. The install endpoint creates the local model using Ollama's documented `POST /api/create` fields (`model`, `from`, `system`, and `parameters`) and will not overwrite a model with the same normalized name.
+
+The desktop host explicitly accepts Qt WebEngine's `downloadRequested` event and opens a native Save As dialog. Without an application handler, Qt WebEngine cancels download requests by default, which made the browser-generated portable AI ZIP appear to do nothing. Exported ZIPs contain the editable Modelfile, profile JSON and setup instructions; they do not contain the several-gigabyte base model weights.
