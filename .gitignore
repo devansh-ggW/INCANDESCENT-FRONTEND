@@ -5,3 +5,6 @@ incandescent_api_data.json
 .incandescent-inference-active.tmp
 __pycache__/
 *.py[cod]
+build/
+dist/
+*.spec

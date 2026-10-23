@@ -1,44 +1,40 @@
-# INCANDESCENT desktop app
+# INCANDESCENT desktop app and Windows installer
 
 The Windows desktop build wraps the existing index.html unchanged in a native application window. It does not redesign or duplicate the current interface.
 
+## Windows installer
+
+The installer is a per-user Windows setup EXE. It installs the desktop app, creates Start Menu shortcuts and an optional desktop shortcut, then launches a small model-setup window. The model setup checks Ollama and, if needed, downloads qwen3.5:2b through the local Ollama API with visible progress. It never installs or replaces Ollama. If Ollama is missing or offline, it offers the official Windows download page and allows the user to retry or skip; a Start Menu shortcut lets them return to model setup later.
+
+The model is downloaded into Ollama's configured model directory, not into the INCANDESCENT install folder. Allow around 3 GB or more of disk space and a working internet connection.
+
+The first Windows release targets 64-bit Windows 10 and later. Windows ARM64 is initially supported through the x64 app under Windows emulation where the OS permits it; native ARM64 is a later target. A full 32-bit Windows release is not offered. The user's Windows 10 build 16299 has been tested with the desktop app, but current Ollama documentation lists Windows 10 22H2 (build 19045) or later as its supported Windows baseline. The first-run model wizard warns on older builds and proceeds only if Ollama actually responds. Windows 7/8/8.1 are not included in this release.
+
 ## Desktop renderer
 
-The app bundles Qt WebEngine (Chromium-based) inside its EXE. It does not require Microsoft Edge WebView2 to be installed separately. The renderer is intended only for the local INCANDESCENT UI; HTTP(S) links opened by the user are sent to the normal system browser instead of navigating the embedded engine.
+The app bundles Qt WebEngine (Chromium-based) inside its EXE. It does not require Microsoft Edge WebView2 installed separately. The renderer is intended only for the local INCANDESCENT UI; HTTP(S) links clicked in the app are sent to the normal system browser instead of navigating the embedded engine.
 
-The compatible Qt 5 WebEngine package uses an older Chromium baseline. The host restricts navigation to its loopback app, but this should not be used as a general-purpose browser or deployed to untrusted pages. A real smoke test on the target Windows build is required before claiming support for that exact OS build.
+The Qt 5 WebEngine package uses an older Chromium baseline. The host restricts navigation to its loopback app, but this should not be used as a general-purpose browser or to open untrusted web pages.
 
-The one-file EXE bundles the renderer and checks for the Visual C++ runtime DLLs needed by Qt WebEngine. The GitHub Actions artifact is a single ZIP with the EXE and quick-start note; it does not nest a second full-size ZIP inside.
+## Build on Windows
 
-## Build
+1. Install 64-bit Python 3.11 on the build machine.
+2. Install Inno Setup 6.3 or later.
+3. Keep desktop_app.py, model_setup.py, server.py, run_incandescent.py, index.html, incandescent.ico, and installer/INCANDESCENT.iss in the project folder.
+4. Run build_desktop.bat.
+5. The desktop executable is dist\INCANDESCENT.exe and the installer is dist\installer\INCANDESCENT-Setup.exe.
 
-1. Install 64-bit Python 3.11 on the developer/build machine.
-2. Keep desktop_app.py, server.py, run_incandescent.py, index.html, and incandescent.ico in the project folder.
-3. Run build_desktop.bat.
-4. The standalone executable is dist\INCANDESCENT.exe.
+End users do not need Python or WebView2 installed separately. Ollama and model weights are not bundled; the model is downloaded through the user's own Ollama installation.
 
-The EXE includes Python and the renderer runtime. End users do not need Python or WebView2 installed separately.
-
-## GitHub Actions build
-
-The Build INCANDESCENT desktop app workflow builds a Windows executable and publishes INCANDESCENT-desktop-windows as an artifact. Run it from the repository Actions tab, then download the artifact ZIP.
-
-## Requirements on the user's PC
-
-- Windows x64. Older Windows compatibility is the goal, but an actual smoke test on Windows 10 build 16299 is still needed before guaranteeing that exact build.
-- Ollama installed and running separately by the user.
-- The selected model installed in Ollama. The desktop defaults to qwen3.5:2b; Settings supports other installed models.
-
-The wrapper does not install Ollama or download model weights. Startup diagnostics are written to %LOCALAPPDATA%\INCANDESCENT\desktop.log.
-
-## Data and local service
+## Data and uninstall
 
 - Chat/profile browser storage persists in %LOCALAPPDATA%\INCANDESCENT\WebEngine.
 - The app's internal service binds only to 127.0.0.1 and does not listen on the LAN.
-- Port 8765 is preferred. If busy, the app tries the next 19 ports.
-- The service and optional resource-priority supervisor are stopped when the window closes.
-- Closing INCANDESCENT does not stop Ollama or delete model weights.
+- Uninstall removes INCANDESCENT application files and shortcuts, not Ollama or the model store.
+- Chat/profile data in %LOCALAPPDATA%\INCANDESCENT is preserved when the application is uninstalled.
 
-## Scope
+## Scope and validation
 
-This is a desktop executable build, not the customer installer. Ollama and model weights are not bundled. The EXE is not code-signed. CI packaging success does not replace a real startup test on the target Windows machine.
+This is the first Windows installer target, not a macOS/Linux installer. It is not code-signed. Packaging success is not proof of launch compatibility on every Windows revision; a real install, model-pull, restart, and uninstall test is required on each claimed OS/architecture.
+
+Before a commercial release, review the licenses of bundled PyQt5 and Qt WebEngine components and the installer compiler's licensing terms.
