@@ -741,7 +741,7 @@ class Handler(BaseHTTPRequestHandler):
             if any(name.split(":", 1)[0].casefold() == slug.casefold() for name in installed):
                 self.send_json(409, {"ok": False, "error": "Ollama already has a model named '" + slug + "'. Rename this AI to avoid overwriting an existing model."})
                 return
-            body = json_bytes({"name": model_tag, "modelfile": build_ai_modelfile(profile), "stream": False})
+            body = json_bytes({"model": model_tag, "name": model_tag, "modelfile": build_ai_modelfile(profile), "stream": False})
             request = urllib.request.Request(
                 OLLAMA_BASE + "/api/create", data=body,
                 headers={"Content-Type": "application/json", "Accept": "application/json"},
