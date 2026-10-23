@@ -1,24 +1,24 @@
-# INCANDESCENT — Windows downloads
+# INCANDESCENT
 
-Download the actual Windows application from **Releases**, not from GitHub's **Code → Download ZIP** source archive.
+A local desktop AI workspace powered by Ollama, with conversational chat, code help, image analysis, saved chats and configurable assistant profiles.
 
-## Downloads
+## Windows download
 
-- **[Download INCANDESCENT Setup](https://github.com/devansh-ggW/INCANDESCENT-FRONTEND/releases/download/v1.0.0/INCANDESCENT-Setup.exe)** — recommended; installs the app and provides model setup.
-- [Download the standalone INCANDESCENT app](https://github.com/devansh-ggW/INCANDESCENT-FRONTEND/releases/download/v1.0.0/INCANDESCENT.exe)
-- [Release page and all files](https://github.com/devansh-ggW/INCANDESCENT-FRONTEND/releases/tag/v1.0.0)
+**[Download the INCANDESCENT v1.1.0 installer](https://github.com/devansh-ggW/INCANDESCENT-FRONTEND/releases/download/v1.1.0/INCANDESCENT-Setup.exe)**
 
-The executable files are distributed as release assets. They are intentionally not stored as regular source files in this repository because they exceed GitHub's 100 MiB ordinary-file limit.
+[Release page and files](https://github.com/devansh-ggW/INCANDESCENT-FRONTEND/releases/tag/v1.1.0)
 
-## Install
+The installer uses your existing Ollama installation; it does not install Ollama. When Ollama is responding, setup automatically downloads `qwen3.5:2b` if missing. The model download requires internet access and several gigabytes of storage.
 
-1. Download **INCANDESCENT-Setup.exe** from the Releases page above.
-2. Run the downloaded installer.
-3. INCANDESCENT uses your existing Ollama installation; this installer does not install Ollama itself.
-4. The model setup can download `qwen3.5:2b` through Ollama if it is not already present.
+## Custom AIs
 
-The initial installer targets 64-bit Windows 10 and later. Windows ARM64 is best-effort through x64 emulation. Windows 7/8/8.1 and 32-bit Windows are not supported.
+After creating and saving an AI profile, choose either:
 
-## Important
+- **Add to Ollama** to create a local model named from the AI's name, using `qwen3.5:2b`.
+- **Download portable files** to export a ZIP containing an editable `Modelfile`, profile metadata, and setup instructions. The ZIP does not contain the multi-gigabyte model weights; another PC needs Ollama and `qwen3.5:2b`.
 
-Do not run a 134-byte `.exe` file from an LFS pointer or repository archive. Use the release links above to download the actual executable.
+Custom profiles configure instructions and context on top of a base model; this is not model-weight fine-tuning.
+
+## Build from source
+
+Use Python 3.11 and the dependencies in `requirements-desktop.txt`, then run `python desktop_app.py`. GitHub Actions builds the Windows app and installer.
