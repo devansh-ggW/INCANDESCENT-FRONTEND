@@ -249,21 +249,20 @@ def build_ai_system_prompt(raw_profile: Any) -> str:
     profile = normalize_ai_profile(raw_profile)
     if not profile or not profile.get("purpose"):
         raise ValueError("Save an AI with a name and purpose before exporting it.")
-    safe_name = re.sub(r"\\s+", " ", profile["name"]).strip()
+    safe_name = re.sub(r"\s+", " ", profile["name"]).strip()
     base_prompt = SYSTEM_PROMPT.replace(
         "You are INCANDESCENT, a capable conversational AI assistant.",
         "You are " + safe_name + ", a capable conversational AI assistant.",
         1,
     )
-    # Ollama's API takes the system prompt as a JSON string. Triple quotes are
-    # not special there, but normalizing newlines makes the exported prompt stable.
-    return (base_prompt + "\\n\\n" + custom_ai_system_message(profile)).replace("\\r\\n", "\\n").strip()
+    # Ollama's API takes the system prompt as a JSON string. Normalize line endings.
+    return (base_prompt + "\n\n" + custom_ai_system_message(profile)).replace("\r\n", "\n").strip()
 
 
 def build_ai_modelfile(raw_profile: Any) -> str:
     """Build an editable Ollama Modelfile backed by the installed Qwen 3.5 2B model."""
     system = build_ai_system_prompt(raw_profile).replace('"""', "'''")
-    return "FROM " + BASE_MODEL + "\\n\\nPARAMETER temperature 0.7\\n\\nSYSTEM \"\"\"\\n" + system + "\\n\"\"\"\\n"
+    return "FROM " + BASE_MODEL + "\n\nPARAMETER temperature 0.7\n\nSYSTEM \"\"\"\n" + system + "\n\"\"\"\n"
 
 def build_ai_export_package(raw_profile: Any, model_display_name: Optional[str] = None) -> bytes:
     """Create a shareable, editable configuration ZIP; model weights are excluded."""
