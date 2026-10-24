@@ -28,11 +28,20 @@ def test_package_builders():
     prompt = server.build_ai_system_prompt(profile)
     assert "You are Store Copilot" in prompt
     assert "Never quote, define, analyze, or explain slang unless the user asks" in prompt
+    assert prompt.startswith("/no_think\\n\\n")
+    assert "Never reveal or narrate private chain-of-thought" in prompt
 
     modelfile = server.build_ai_modelfile(profile)
     assert modelfile.startswith("FROM qwen3.5:2b" + chr(10))
     assert 'SYSTEM """' in modelfile
     assert modelfile.count('"""') == 2, "profile text must not close the SYSTEM delimiter"
+    assert 'SYSTEM """\\n/no_think\\n\\n' in modelfile
+    assert "PARAMETER num_ctx 4096" in modelfile
+    assert "PARAMETER num_predict 512" in modelfile
+    assert "PARAMETER temperature 0.65" in modelfile
+    assert "Never reveal or narrate private chain-of-thought" in modelfile
+    assert 'Do not output headings such as "Thinking Process"' in modelfile
+    assert "Work through the task carefully" not in modelfile
     assert "This includes " + chr(34) * 3 in profile["personality"]
 
     package = server.build_ai_export_package(profile, "Dig It Up")

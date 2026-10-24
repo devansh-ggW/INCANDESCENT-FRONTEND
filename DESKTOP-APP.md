@@ -59,3 +59,8 @@ The bundled Qt WebEngine can be older than the Chromium engine in a regular brow
 Every saved custom AI now has a small direct-install action in the sidebar. It opens a name prompt with a live preview of the resulting Ollama tag, for example `Dig It Up` becomes `dig-it-up:latest`. The install endpoint creates the local model using Ollama's documented `POST /api/create` fields (`model`, `from`, `system`, and `parameters`) and will not overwrite a model with the same normalized name.
 
 The desktop host explicitly accepts Qt WebEngine's `downloadRequested` event and opens a native Save As dialog. Without an application handler, Qt WebEngine cancels download requests by default, which made the browser-generated portable AI ZIP appear to do nothing. Exported ZIPs contain the editable Modelfile, profile JSON and setup instructions; they do not contain the several-gigabyte base model weights.
+
+
+## Custom AI direct replies (v1.1.3)
+
+Created Ollama models start their system prompt with the Qwen `/no_think` control, explicitly prohibit narration of private reasoning, and use a bounded 4,096-token context with a 512-token output cap. This is designed to prevent simple greetings such as `hey` from producing long "Thinking Process" monologues in direct `ollama run <model>` sessions. INCANDESCENT's own chat requests independently pass `think: false` to Ollama. Exact behavior still depends on the installed Ollama version and base-model template, so the direct CLI should be verified on the target PC after recreating the named model.
