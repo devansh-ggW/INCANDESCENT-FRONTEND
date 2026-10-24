@@ -27,7 +27,7 @@ def test_package_builders():
 
     prompt = server.build_ai_system_prompt(profile)
     assert "You are Store Copilot" in prompt
-    assert "Never quote, define, analyze, or explain slang unless the user asks" in prompt
+    assert "Never explain slang unless the user asks what it means" in prompt
     assert prompt.startswith("/no_think" + chr(10) * 2)
     assert "Never reveal or narrate private chain-of-thought" in prompt
 
