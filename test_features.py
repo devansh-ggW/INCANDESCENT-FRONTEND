@@ -53,7 +53,7 @@ checks = {
     "saved AI rows have a direct install icon": "data-install-ai" in HTML and "Add ' + escapeHtml(profile.name) + ' to Ollama" in HTML,
     "install popup asks for a custom Ollama name": 'id="aiDeployModelName"' in HTML and 'id="aiDeployTagPreview"' in HTML and "e.g. dawg or dig it up" in HTML,
     "custom name is sent to the install and export endpoints": "JSON.stringify({profile, model_name:displayName})" in HTML and "model_name:$('aiDeployModelName').value.trim()" in HTML,
-    "AI prompt says not to explain slang unless asked": "Never quote, define, analyze, or explain slang unless the user asks" in SERVER,
+    "AI prompt says not to explain slang unless asked": "Never explain slang unless the user asks what it means" in SERVER,
     "no API-key endpoint remains in backend": "/api/keys" not in SERVER and "v1/chat/completions" not in SERVER,
     "no generated-file service remains in backend": "/api/files/" not in SERVER and "create_artifact" not in SERVER and "def execute_tool" not in SERVER,
     "backend system prompt describes text output": "does not write project files" in SERVER and "complete useful code" in SERVER,
