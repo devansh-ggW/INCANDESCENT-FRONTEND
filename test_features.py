@@ -56,7 +56,7 @@ checks = {
     "AI prompt says not to explain slang unless asked": "Never explain slang unless the user asks what it means" in SERVER,
     "no API-key endpoint remains in backend": "/api/keys" not in SERVER and "v1/chat/completions" not in SERVER,
     "no generated-file service remains in backend": "/api/files/" not in SERVER and "create_artifact" not in SERVER and "def execute_tool" not in SERVER,
-    "backend system prompt describes text output": "does not write project files" in SERVER and "complete useful code" in SERVER,
+    "backend system prompt describes text output": "does not write project files" in SERVER and "provide useful complete code" in SERVER,
     "backend has no generated-file response field": '"files": []' not in SERVER,
     "image analysis routes through vision model": "vision_model_for_request(MODEL)" in SERVER and 'user_turn["images"] = images' in SERVER,
     "model preset uses chat-only rules": "Do not create files" in MODELFILE,
