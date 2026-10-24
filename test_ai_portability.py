@@ -76,6 +76,7 @@ def test_http_endpoints():
     original_models = server.ollama_models
     captured = {"payloads": [], "control_calls": []}
     installed = [{"name": "qwen3.5:2b", "size": 100}]
+    fail_next_create_for = set()
 
     def fake_urlopen(request, *args, **kwargs):
         url = request.full_url if isinstance(request, urllib.request.Request) else str(request)
@@ -90,6 +91,12 @@ def test_http_endpoints():
             captured["control_calls"].append(call)
             if call["path"] == "create":
                 captured["payloads"].append(payload)
+                if payload.get("model") in fail_next_create_for:
+                    fail_next_create_for.remove(payload["model"])
+                    raise urllib.error.HTTPError(
+                        url, 500, "simulated create failure", None,
+                        io.BytesIO(b'{"error":"simulated create failure"}')
+                    )
             return io.BytesIO(b'{"status":"success"}')
         return original_urlopen(request, *args, **kwargs)
 
@@ -149,8 +156,23 @@ def test_http_endpoints():
                 assert body["exists"] is True
                 assert "Replace existing model" in body["error"]
 
-            # Confirmed update backs up the old model, deletes it, creates the new
-            # definition with concise settings, and removes the backup after success.
+            # Force a create error after deleting the selected tag. The old model
+            # must be restored from the temporary backup, which should then be removed.
+            fail_next_create_for.add("dawg:latest")
+            try:
+                with post_json("/api/ai/install", model_name="Dawg", replace_existing=True) as response:
+                    raise AssertionError("simulated create failure should be returned as an error")
+            except urllib.error.HTTPError as exc:
+                assert exc.code == 502
+                error = json.loads(exc.read().decode("utf-8"))
+                assert "previous model was restored" in error["error"]
+
+            rollback_paths = [call["path"] for call in captured["control_calls"][-5:]]
+            assert rollback_paths == ["copy", "delete", "create", "copy", "delete"]
+            assert captured["control_calls"][-5]["payload"]["source"] == "dawg:latest"
+            assert captured["control_calls"][-2]["payload"]["destination"] == "dawg:latest"
+
+            # A subsequent confirmed update rebuilds the tag with the new settings.
             with post_json("/api/ai/install", model_name="Dawg", replace_existing=True) as response:
                 result = json.loads(response.read().decode("utf-8"))
                 assert response.status == 200 and result["ok"] is True
