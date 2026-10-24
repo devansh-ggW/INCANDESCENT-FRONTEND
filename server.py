@@ -754,7 +754,7 @@ class Handler(BaseHTTPRequestHandler):
                 })
                 return
 
-            # Never silently overwrite an existing Ollama model with the same name.
+            replace_existing = payload.get("replace_existing") is True
             try:
                 models = ollama_models()
             except Exception:
@@ -767,53 +767,105 @@ class Handler(BaseHTTPRequestHandler):
             if not (installed & base_aliases):
                 self.send_json(409, {"ok": False, "error": "The base model " + BASE_MODEL + " is not installed yet. Finish Qwen setup, then retry."})
                 return
-            slug = model_tag.split(":", 1)[0]
-            if any(name.split(":", 1)[0].casefold() == slug.casefold() for name in installed):
-                self.send_json(409, {"ok": False, "error": "Ollama already has a model named '" + slug + "'. Rename this AI to avoid overwriting an existing model."})
+
+            base_tag = BASE_MODEL if ":" in BASE_MODEL else BASE_MODEL + ":latest"
+            if model_tag.casefold() == base_tag.casefold() or model_tag.split(":", 1)[0].casefold() == BASE_MODEL.split(":", 1)[0].casefold():
+                self.send_json(400, {"ok": False, "error": "Choose a different name; INCANDESCENT will not replace the Qwen base model."})
                 return
-            # Ollama's documented /api/create schema uses "model", "from", and
-            # "system" (plus optional "parameters"). A "modelfile" JSON field is
-            # not part of this endpoint's schema and can be silently ignored.
+
+            existing_tag = next((name for name in installed if name.casefold() == model_tag.casefold()), None)
+            if existing_tag and not replace_existing:
+                self.send_json(409, {
+                    "ok": False,
+                    "exists": True,
+                    "model": existing_tag,
+                    "error": "Ollama already has '" + existing_tag + "'. Tick Replace existing model to rebuild this custom AI with the updated settings, or choose another name."
+                })
+                return
+
             try:
                 system_prompt = build_ai_system_prompt(profile)
             except ValueError as exc:
                 self.send_json(400, {"ok": False, "error": str(exc)})
                 return
-            body = json_bytes({
+
+            def ollama_control(path: str, control_payload: Dict[str, Any], method: str = "POST", timeout: float = 60.0) -> Dict[str, Any]:
+                control_request = urllib.request.Request(
+                    OLLAMA_BASE + path,
+                    data=json_bytes(control_payload),
+                    headers={"Content-Type": "application/json", "Accept": "application/json"},
+                    method=method,
+                )
+                try:
+                    with urllib.request.urlopen(control_request, timeout=timeout) as control_response:
+                        raw = control_response.read(MAX_MODEL_RESPONSE_BYTES + 1)
+                    if len(raw) > MAX_MODEL_RESPONSE_BYTES:
+                        raise RuntimeError("Ollama returned an unexpectedly large control response.")
+                    data = json.loads(raw.decode("utf-8")) if raw else {"status": "success"}
+                    if not isinstance(data, dict) or data.get("error") or (data.get("status") and data["status"] not in {"success", "complete"}):
+                        raise RuntimeError(str(data.get("error") or data.get("status") or "Ollama did not confirm the operation."))
+                    return data
+                except urllib.error.HTTPError as exc:
+                    detail = exc.read(2000).decode("utf-8", "replace")
+                    raise RuntimeError("Ollama " + path.rsplit("/", 1)[-1] + " failed (" + str(exc.code) + "): " + (detail or str(exc.reason))) from exc
+
+            backup_tag = None
+            if existing_tag:
+                # Only an explicit user confirmation can trigger replacement.
+                # Copy the previous model definition first so a failed create can restore it.
+                backup_tag = "incandescent-backup-" + model_tag.split(":", 1)[0][:32] + "-" + secrets.token_hex(3) + ":latest"
+                try:
+                    ollama_control("/api/copy", {"source": existing_tag, "destination": backup_tag})
+                    ollama_control("/api/delete", {"model": existing_tag}, method="DELETE")
+                except Exception as exc:
+                    self.send_json(502, {
+                        "ok": False,
+                        "error": "Could not prepare a safe replacement for '" + existing_tag + "'. It has not intentionally been changed. Details: " + str(exc)[:1000]
+                    })
+                    return
+
+            body = {
                 "model": model_tag,
                 "from": BASE_MODEL,
                 "system": system_prompt,
-                "parameters": {"temperature": 0.7},
+                "parameters": {
+                    "temperature": 0.65,
+                    "num_ctx": 4096,
+                    "num_predict": 512,
+                    "repeat_penalty": 1.08,
+                },
                 "stream": False,
-            })
-            request = urllib.request.Request(
-                OLLAMA_BASE + "/api/create", data=body,
-                headers={"Content-Type": "application/json", "Accept": "application/json"},
-                method="POST",
-            )
+            }
             try:
-                with urllib.request.urlopen(request, timeout=900) as response:
-                    data = json.loads(response.read(MAX_MODEL_RESPONSE_BYTES).decode("utf-8"))
-                if not isinstance(data, dict) or data.get("error"):
-                    detail = str(data.get("error", "Ollama did not confirm model creation.")) if isinstance(data, dict) else "Unexpected response from Ollama."
-                    self.send_json(502, {"ok": False, "error": detail})
-                    return
-            except urllib.error.HTTPError as exc:
-                try:
-                    detail = exc.read(2000).decode("utf-8", "replace")
-                except Exception:
-                    detail = str(exc)
-                self.send_json(502, {"ok": False, "error": "Ollama could not create this model. " + detail[:1500]})
-                return
+                ollama_control("/api/create", body, timeout=900)
             except Exception as exc:
-                self.send_json(502, {"ok": False, "error": "Model creation did not complete: " + str(exc)[:1500]})
+                rollback_note = ""
+                if backup_tag:
+                    try:
+                        ollama_control("/api/copy", {"source": backup_tag, "destination": model_tag})
+                        ollama_control("/api/delete", {"model": backup_tag}, method="DELETE")
+                        rollback_note = " The previous model was restored."
+                    except Exception as rollback_exc:
+                        rollback_note = " The previous model backup remains available as '" + backup_tag + "' because automatic restore failed: " + str(rollback_exc)[:500]
+                self.send_json(502, {"ok": False, "error": "Ollama could not create this model. " + str(exc)[:1200] + rollback_note})
                 return
+
+            backup_note = ""
+            if backup_tag:
+                try:
+                    ollama_control("/api/delete", {"model": backup_tag}, method="DELETE")
+                except Exception as exc:
+                    backup_note = " The previous version is retained as '" + backup_tag + "' because its temporary backup could not be removed."
+                    logging.warning("Could not remove temporary Ollama model backup %s: %s", backup_tag, exc)
+
+            action_word = "updated" if existing_tag else "added"
             self.send_json(200, {
                 "ok": True,
                 "model": model_tag,
                 "base_model": BASE_MODEL,
                 "display_name": display_name,
-                "message": display_name + " was added to Ollama as " + model_tag + "."
+                "replaced": bool(existing_tag),
+                "message": display_name + " was " + action_word + " in Ollama as " + model_tag + "." + backup_note
             })
             return
 

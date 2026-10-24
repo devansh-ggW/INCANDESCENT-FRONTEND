@@ -74,23 +74,33 @@ def test_http_endpoints():
     profile = make_profile()
     original_urlopen = urllib.request.urlopen
     original_models = server.ollama_models
-    captured = {}
+    captured = {"payloads": [], "control_calls": []}
+    installed = [{"name": "qwen3.5:2b", "size": 100}]
 
     def fake_urlopen(request, *args, **kwargs):
         url = request.full_url if isinstance(request, urllib.request.Request) else str(request)
-        if url.rstrip("/") == server.OLLAMA_BASE + "/api/create":
-            captured["payload"] = json.loads(request.data.decode("utf-8"))
+        path = url.rstrip("/")
+        if path in {
+            server.OLLAMA_BASE + "/api/create",
+            server.OLLAMA_BASE + "/api/copy",
+            server.OLLAMA_BASE + "/api/delete",
+        }:
+            payload = json.loads(request.data.decode("utf-8")) if request.data else {}
+            call = {"path": path.rsplit("/", 1)[-1], "method": request.get_method(), "payload": payload}
+            captured["control_calls"].append(call)
+            if call["path"] == "create":
+                captured["payloads"].append(payload)
             return io.BytesIO(b'{"status":"success"}')
         return original_urlopen(request, *args, **kwargs)
 
-    server.ollama_models = lambda: [{"name": "qwen3.5:2b", "size": 100}]
+    server.ollama_models = lambda: list(installed)
     httpd = ThreadingHTTPServer(("127.0.0.1", 0), server.Handler)
     thread = threading.Thread(target=httpd.serve_forever, daemon=True)
     thread.start()
     base_url = "http://127.0.0.1:%s" % httpd.server_address[1]
 
-    def post_json(route, model_name="Dig It Up"):
-        payload = {"profile": profile, "model_name": model_name}
+    def post_json(route, model_name="Dig It Up", replace_existing=False):
+        payload = {"profile": profile, "model_name": model_name, "replace_existing": replace_existing}
         body = json.dumps(payload).encode("utf-8")
         request = urllib.request.Request(
             base_url + route,
@@ -117,14 +127,45 @@ def test_http_endpoints():
                 assert result["ok"] is True
                 assert result["model"] == "dig-it-up:latest"
                 assert result["display_name"] == "Dig It Up"
+                assert result["replaced"] is False
+                request_body = captured["payloads"][-1]
+                assert request_body.get("model") == "dig-it-up:latest"
+                assert request_body.get("from") == "qwen3.5:2b"
+                assert request_body.get("parameters") == {
+                    "temperature": 0.65, "num_ctx": 4096, "num_predict": 512, "repeat_penalty": 1.08
+                }
+                assert request_body.get("stream") is False
+                assert "IDENTITY: Your name is exactly Store Copilot" in request_body.get("system", "")
+                assert request_body.get("modelfile") is None, "use Ollama's documented /api/create schema"
 
-        request_body = captured.get("payload", {})
-        assert request_body.get("model") == "dig-it-up:latest"
-        assert request_body.get("from") == "qwen3.5:2b"
-        assert request_body.get("parameters") == {"temperature": 0.7}
-        assert request_body.get("stream") is False
-        assert "IDENTITY: Your name is exactly Store Copilot" in request_body.get("system", "")
-        assert "modelfile" not in request_body, "use Ollama's documented /api/create schema"
+            # A name collision should be blocked unless the user explicitly checks replace.
+            installed[:] = [{"name": "qwen3.5:2b", "size": 100}, {"name": "dawg:latest", "size": 200}]
+            try:
+                with post_json("/api/ai/install", model_name="Dawg") as response:
+                    raise AssertionError("existing custom model should require an explicit replace confirmation")
+            except urllib.error.HTTPError as exc:
+                assert exc.code == 409
+                body = json.loads(exc.read().decode("utf-8"))
+                assert body["exists"] is True
+                assert "Replace existing model" in body["error"]
+
+            # Confirmed update backs up the old model, deletes it, creates the new
+            # definition with concise settings, and removes the backup after success.
+            with post_json("/api/ai/install", model_name="Dawg", replace_existing=True) as response:
+                result = json.loads(response.read().decode("utf-8"))
+                assert response.status == 200 and result["ok"] is True
+                assert result["model"] == "dawg:latest"
+                assert result["replaced"] is True
+                assert "updated" in result["message"].lower()
+
+            replacement_body = captured["payloads"][-1]
+            assert replacement_body["model"] == "dawg:latest"
+            assert replacement_body["parameters"]["num_predict"] == 512
+            paths = [call["path"] for call in captured["control_calls"]]
+            assert paths[-4:] == ["copy", "delete", "create", "delete"]
+            assert captured["control_calls"][-4]["payload"]["source"] == "dawg:latest"
+            assert captured["control_calls"][-4]["payload"]["destination"].startswith("incandescent-backup-dawg-")
+        
     finally:
         httpd.shutdown()
         thread.join(timeout=3)
