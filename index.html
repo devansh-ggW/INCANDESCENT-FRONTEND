@@ -1079,6 +1079,17 @@
     #chatSearch { margin-top:0 !important; }
     #chatHistory { margin-top:2px !important; min-width:0 !important; }
     #aiProfilesList { min-width:0 !important; }
+  
+    .ai-deploy-replace {
+      display:flex !important; align-items:flex-start; gap:9px;
+      margin:11px 0 2px; padding:10px 11px; border:1px solid #e2e2e5;
+      border-radius:8px; background:#fff; color:#34363b; cursor:pointer;
+      font-size:11px; line-height:1.4;
+    }
+    .ai-deploy-replace input { flex:0 0 auto; width:14px; height:14px; margin:1px 0 0; accent-color:#854235; }
+    .ai-deploy-replace span { display:flex; min-width:0; flex-direction:column; gap:3px; }
+    .ai-deploy-replace strong { font-weight:650; }
+    .ai-deploy-replace small { color:#74767d; font-size:10px; line-height:1.45; }
   </style>
 </head>
 <body>
@@ -1199,6 +1210,10 @@
       <label class="field-label" for="aiDeployModelName">Name in Ollama</label>
       <input class="ai-input" id="aiDeployModelName" type="text" maxlength="72" required autocomplete="off" placeholder="e.g. dawg or dig it up" aria-describedby="aiDeployTagHint">
       <div class="ai-deploy-note" id="aiDeployTagHint">Ollama model tag: <strong id="aiDeployTagPreview">your-ai:latest</strong>. The model reuses your installed Qwen 3.5 2B base model. The portable ZIP contains editable configuration, not the multi-gigabyte model weights.</div>
+      <label class="ai-deploy-replace" for="aiDeployReplaceExisting">
+        <input id="aiDeployReplaceExisting" type="checkbox">
+        <span><strong>Replace existing model</strong><small>Only select this to update a custom model with the same Ollama name. INCANDESCENT makes a temporary backup first.</small></span>
+      </label>
       <div id="aiDeployStatus" role="status" aria-live="polite"></div>
       <div class="ai-deploy-actions">
         <button class="ai-deploy-secondary" id="aiDeployDone" type="button">Done</button>
@@ -2059,6 +2074,7 @@
     $('aiDeployInstall').textContent = 'Add to Ollama';
     $('aiDeployExport').textContent = 'Download portable files';
     $('aiDeployModelName').value = profile.name;
+    $('aiDeployReplaceExisting').checked = false;
     updateAiDeployTagPreview();
     showDialogSafely($('aiDeployDialog'));
   }
@@ -2080,12 +2096,12 @@
     try {
       const response = await fetch('/api/ai/install', {
         method:'POST', headers:{'Content-Type':'application/json', Accept:'application/json'},
-        body:JSON.stringify({profile, model_name:displayName})
+        body:JSON.stringify({profile, model_name:displayName, replace_existing:$('aiDeployReplaceExisting').checked})
       });
       const data = await readResponse(response);
       $('aiDeployStatus').textContent = data.message || ('Added to Ollama as ' + data.model + '.');
       $('aiDeployStatus').className = 'success';
-      button.textContent = 'Added to Ollama';
+      button.textContent = data.replaced ? 'Updated in Ollama' : 'Added to Ollama';
       $('aiDeployTagPreview').textContent = data.model || ollamaModelTagPreview(displayName);
       showToast(data.message || (displayName + ' added to Ollama'));
     } catch (error) {

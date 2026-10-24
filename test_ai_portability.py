@@ -27,12 +27,21 @@ def test_package_builders():
 
     prompt = server.build_ai_system_prompt(profile)
     assert "You are Store Copilot" in prompt
-    assert "Never quote, define, analyze, or explain slang unless the user asks" in prompt
+    assert "Never explain slang unless the user asks what it means" in prompt
+    assert prompt.startswith("/no_think" + chr(10) * 2)
+    assert "Never reveal or narrate private chain-of-thought" in prompt
 
     modelfile = server.build_ai_modelfile(profile)
     assert modelfile.startswith("FROM qwen3.5:2b" + chr(10))
     assert 'SYSTEM """' in modelfile
     assert modelfile.count('"""') == 2, "profile text must not close the SYSTEM delimiter"
+    assert ('SYSTEM """' + chr(10) + "/no_think" + chr(10) * 2) in modelfile
+    assert "PARAMETER num_ctx 4096" in modelfile
+    assert "PARAMETER num_predict 512" in modelfile
+    assert "PARAMETER temperature 0.65" in modelfile
+    assert "Never reveal or narrate private chain-of-thought" in modelfile
+    assert 'Do not output headings such as "Thinking Process"' in modelfile
+    assert "Work through the task carefully" not in modelfile
     assert "This includes " + chr(34) * 3 in profile["personality"]
 
     package = server.build_ai_export_package(profile, "Dig It Up")
@@ -65,23 +74,40 @@ def test_http_endpoints():
     profile = make_profile()
     original_urlopen = urllib.request.urlopen
     original_models = server.ollama_models
-    captured = {}
+    captured = {"payloads": [], "control_calls": []}
+    installed = [{"name": "qwen3.5:2b", "size": 100}]
+    fail_next_create_for = set()
 
     def fake_urlopen(request, *args, **kwargs):
         url = request.full_url if isinstance(request, urllib.request.Request) else str(request)
-        if url.rstrip("/") == server.OLLAMA_BASE + "/api/create":
-            captured["payload"] = json.loads(request.data.decode("utf-8"))
+        path = url.rstrip("/")
+        if path in {
+            server.OLLAMA_BASE + "/api/create",
+            server.OLLAMA_BASE + "/api/copy",
+            server.OLLAMA_BASE + "/api/delete",
+        }:
+            payload = json.loads(request.data.decode("utf-8")) if request.data else {}
+            call = {"path": path.rsplit("/", 1)[-1], "method": request.get_method(), "payload": payload}
+            captured["control_calls"].append(call)
+            if call["path"] == "create":
+                captured["payloads"].append(payload)
+                if payload.get("model") in fail_next_create_for:
+                    fail_next_create_for.remove(payload["model"])
+                    raise urllib.error.HTTPError(
+                        url, 500, "simulated create failure", None,
+                        io.BytesIO(b'{"error":"simulated create failure"}')
+                    )
             return io.BytesIO(b'{"status":"success"}')
         return original_urlopen(request, *args, **kwargs)
 
-    server.ollama_models = lambda: [{"name": "qwen3.5:2b", "size": 100}]
+    server.ollama_models = lambda: list(installed)
     httpd = ThreadingHTTPServer(("127.0.0.1", 0), server.Handler)
     thread = threading.Thread(target=httpd.serve_forever, daemon=True)
     thread.start()
     base_url = "http://127.0.0.1:%s" % httpd.server_address[1]
 
-    def post_json(route, model_name="Dig It Up"):
-        payload = {"profile": profile, "model_name": model_name}
+    def post_json(route, model_name="Dig It Up", replace_existing=False):
+        payload = {"profile": profile, "model_name": model_name, "replace_existing": replace_existing}
         body = json.dumps(payload).encode("utf-8")
         request = urllib.request.Request(
             base_url + route,
@@ -108,14 +134,60 @@ def test_http_endpoints():
                 assert result["ok"] is True
                 assert result["model"] == "dig-it-up:latest"
                 assert result["display_name"] == "Dig It Up"
+                assert result["replaced"] is False
+                request_body = captured["payloads"][-1]
+                assert request_body.get("model") == "dig-it-up:latest"
+                assert request_body.get("from") == "qwen3.5:2b"
+                assert request_body.get("parameters") == {
+                    "temperature": 0.65, "num_ctx": 4096, "num_predict": 512, "repeat_penalty": 1.08
+                }
+                assert request_body.get("stream") is False
+                assert "IDENTITY: Your name is exactly Store Copilot" in request_body.get("system", "")
+                assert request_body.get("modelfile") is None, "use Ollama's documented /api/create schema"
 
-        request_body = captured.get("payload", {})
-        assert request_body.get("model") == "dig-it-up:latest"
-        assert request_body.get("from") == "qwen3.5:2b"
-        assert request_body.get("parameters") == {"temperature": 0.7}
-        assert request_body.get("stream") is False
-        assert "IDENTITY: Your name is exactly Store Copilot" in request_body.get("system", "")
-        assert "modelfile" not in request_body, "use Ollama's documented /api/create schema"
+            # A name collision should be blocked unless the user explicitly checks replace.
+            installed[:] = [{"name": "qwen3.5:2b", "size": 100}, {"name": "dawg:latest", "size": 200}]
+            try:
+                with post_json("/api/ai/install", model_name="Dawg") as response:
+                    raise AssertionError("existing custom model should require an explicit replace confirmation")
+            except urllib.error.HTTPError as exc:
+                assert exc.code == 409
+                body = json.loads(exc.read().decode("utf-8"))
+                assert body["exists"] is True
+                assert "Replace existing model" in body["error"]
+
+            # Force a create error after deleting the selected tag. The old model
+            # must be restored from the temporary backup, which should then be removed.
+            fail_next_create_for.add("dawg:latest")
+            try:
+                with post_json("/api/ai/install", model_name="Dawg", replace_existing=True) as response:
+                    raise AssertionError("simulated create failure should be returned as an error")
+            except urllib.error.HTTPError as exc:
+                assert exc.code == 502
+                error = json.loads(exc.read().decode("utf-8"))
+                assert "previous model was restored" in error["error"]
+
+            rollback_paths = [call["path"] for call in captured["control_calls"][-5:]]
+            assert rollback_paths == ["copy", "delete", "create", "copy", "delete"]
+            assert captured["control_calls"][-5]["payload"]["source"] == "dawg:latest"
+            assert captured["control_calls"][-2]["payload"]["destination"] == "dawg:latest"
+
+            # A subsequent confirmed update rebuilds the tag with the new settings.
+            with post_json("/api/ai/install", model_name="Dawg", replace_existing=True) as response:
+                result = json.loads(response.read().decode("utf-8"))
+                assert response.status == 200 and result["ok"] is True
+                assert result["model"] == "dawg:latest"
+                assert result["replaced"] is True
+                assert "updated" in result["message"].lower()
+
+            replacement_body = captured["payloads"][-1]
+            assert replacement_body["model"] == "dawg:latest"
+            assert replacement_body["parameters"]["num_predict"] == 512
+            paths = [call["path"] for call in captured["control_calls"]]
+            assert paths[-4:] == ["copy", "delete", "create", "delete"]
+            assert captured["control_calls"][-4]["payload"]["source"] == "dawg:latest"
+            assert captured["control_calls"][-4]["payload"]["destination"].startswith("incandescent-backup-dawg-")
+        
     finally:
         httpd.shutdown()
         thread.join(timeout=3)

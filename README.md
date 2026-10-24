@@ -4,9 +4,9 @@ A local desktop AI workspace powered by Ollama, with conversational chat, code h
 
 ## Windows download
 
-**[Download the INCANDESCENT v1.1.2 installer](https://github.com/devansh-ggW/INCANDESCENT-FRONTEND/releases/download/v1.1.2/INCANDESCENT-Setup.exe)**
+**[Download the INCANDESCENT v1.1.3 installer](https://github.com/devansh-ggW/INCANDESCENT-FRONTEND/releases/download/v1.1.3/INCANDESCENT-Setup.exe)**
 
-[Release page and files](https://github.com/devansh-ggW/INCANDESCENT-FRONTEND/releases/tag/v1.1.2)
+[Release page and files](https://github.com/devansh-ggW/INCANDESCENT-FRONTEND/releases/tag/v1.1.3)
 
 The installer uses your existing Ollama installation; it does not install Ollama. When Ollama is responding, setup automatically downloads `qwen3.5:2b` if missing. The app also attempts to start your already-installed local Ollama service if it is not listening. The model download requires internet access and several gigabytes of storage.
 
@@ -17,7 +17,7 @@ After creating and saving an AI profile, either use the download icon next to it
 - **Add to Ollama** creates a model locally using the installed `qwen3.5:2b` base model. It then appears in `ollama list` and can be run with `ollama run your-model-name`.
 - **Download portable files** exports a ZIP containing an editable `Modelfile`, profile metadata, and setup instructions. In the Windows desktop app, choose a location in the Save As dialog. The ZIP does not contain the multi-gigabyte Qwen model weights; another PC needs Ollama and `qwen3.5:2b`.
 
-Custom profiles configure instructions and context on top of a base model; this is not model-weight fine-tuning.
+Custom profiles configure instructions and context on top of a base model; this is not model-weight fine-tuning. The generated Ollama model starts with Qwen's `/no_think` control, explicitly tells the model to return only user-facing answers, and has bounded context/output defaults to discourage long reasoning monologues on simple greetings.
 
 ## Build from source
 

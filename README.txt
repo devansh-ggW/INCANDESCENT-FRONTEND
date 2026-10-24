@@ -54,13 +54,13 @@ LIMITATIONS
 This Windows installer does not bundle Ollama or model weights. The model is downloaded through the user's own Ollama installation. This build is not code-signed. Model quality and speed depend on the installed model and computer hardware. Real-device testing is required before claiming support for any Windows release/architecture.
 
 
-LATEST WINDOWS INSTALLER (v1.1.2)
+LATEST WINDOWS INSTALLER (v1.1.3)
 Download the real installer from GitHub Releases:
-https://github.com/devansh-ggW/INCANDESCENT-FRONTEND/releases/download/v1.1.2/INCANDESCENT-Setup.exe
+https://github.com/devansh-ggW/INCANDESCENT-FRONTEND/releases/download/v1.1.3/INCANDESCENT-Setup.exe
 
 Standalone app:
-https://github.com/devansh-ggW/INCANDESCENT-FRONTEND/releases/download/v1.1.2/INCANDESCENT.exe
+https://github.com/devansh-ggW/INCANDESCENT-FRONTEND/releases/download/v1.1.3/INCANDESCENT.exe
 
-After saving a custom AI, click the download icon beside its name or use Add to Ollama. A popup asks which name to use (for example, dawg or dig it up) and previews the Ollama tag. Add creates the model locally using qwen3.5:2b; it appears in "ollama list" and can run with "ollama run your-name".
+After saving a custom AI, click the download icon beside its name or use Add to Ollama. A popup asks which name to use (for example, dawg or dig it up) and previews the Ollama tag. Add creates the model locally using qwen3.5:2b; it appears in "ollama list" and can run with "ollama run your-name". The model now defaults to concise answer-only behavior with the Qwen /no_think control.
 
 Download portable files exports an editable ZIP with Modelfile, profile metadata and instructions. In the desktop app, choose a save location from the Save As window. The ZIP does not include Qwen model weights; another computer needs Ollama and qwen3.5:2b.
